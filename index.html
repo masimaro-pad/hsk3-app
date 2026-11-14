@@ -55,7 +55,7 @@ button:focus-visible,[role="button"]:focus-visible,input:focus-visible{outline:2
 /* header */
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px 10px}
-.brand{font-family:var(--font-han);font-size:22px;font-weight:700;letter-spacing:.02em;white-space:nowrap;border:0;background:none;padding:0;cursor:pointer}
+.brand{flex:none;font-family:var(--font-han);font-size:20px;font-weight:700;letter-spacing:.02em;white-space:nowrap;border:0;background:none;padding:0;cursor:pointer}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex:none}
 .seg button{border:0;background:transparent;color:var(--muted);font-weight:600;font-size:14px;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -253,6 +253,31 @@ details.plan summary{cursor:pointer;font-size:14px;color:var(--accent);font-weig
 .expl .mine{color:var(--bad);text-decoration:line-through;text-decoration-thickness:1px}
 .btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
 .btn[disabled]{opacity:.45;cursor:default}
+#views{flex:0 1 auto;overflow-x:auto;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#views::-webkit-scrollbar{display:none}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:10px}
+.mw{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0;scroll-margin-top:150px}
+.mw.flash{border-color:var(--accent)}
+.mh{display:flex;align-items:baseline;gap:8px}
+.mh .h{font-family:var(--font-han);font-size:34px;font-weight:700;line-height:1.1}
+.mh .p{color:var(--accent);font-size:15px;font-weight:500}
+.mh .pill{margin-left:auto}
+.mw .d{font-size:14px}
+.mw .mex{font-family:var(--font-han);font-size:17px;color:var(--muted)}
+.cp{color:var(--accent);font-size:14px;margin-top:-6px}
+.tipline{color:var(--muted);font-size:13.5px;border-top:1px dashed var(--line);padding-top:10px}
+.xlist{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 14px}
+.xrow{position:relative;display:flex;align-items:center;gap:10px;padding-block:12px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;-webkit-user-select:none}
+.xrow:last-child{border-bottom:0}
+.xrow .dot{top:50%;left:-9px;margin-top:-3px}
+.xrow[data-st="k"] .dot{background:var(--accent)}
+.xrow[data-st="u"] .dot{background:var(--bad)}
+.xt{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.xz{font-family:var(--font-han);font-size:19px;line-height:1.4}
+.xp{color:var(--accent);font-size:13px;align-self:flex-start}
+.xk{font-size:14px;color:var(--muted);align-self:flex-start}
+.xrow .say{position:static;flex:none}
+.hideXP .xrow:not(.peek) .xp,.hideXM .xrow:not(.peek) .xk{color:transparent;background:var(--line);border-radius:4px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -261,12 +286,15 @@ details.plan summary{cursor:pointer;font-size:14px;color:var(--accent);font-weig
 <header class="top">
   <div class="wrap">
     <div class="bar">
-      <button class="brand" data-view="home">HSK 3级</button>
+      <button class="brand" data-view="home">HSK3</button>
       <div class="seg" id="views" role="group" aria-label="카테고리">
         <button data-view="home">홈</button>
         <button data-view="vocab">단어</button>
         <button data-view="grammar">문법</button>
         <button data-view="sentence">배열</button>
+        <button data-view="measure">양사</button>
+        <button data-view="conj">접속사</button>
+        <button data-view="situ">표현</button>
       </div>
     </div>
     <div class="subbar" id="subbar">
@@ -1250,6 +1278,10 @@ function load() {
     res: s.res || {},
     sres: s.sres || {},
     s: Object.assign({ mode: 'check', grp: 'all', hideA: true, hint: true, scope: 'all', shuffle: true }, s.s),
+    mc: Object.assign({ m: {}, c: {}, x: {} }, s.mc),
+    m: Object.assign({ mode: 'study', grp: 'all', scope: 'all', shuffle: true }, s.m),
+    c: Object.assign({ mode: 'study', grp: 'all', scope: 'all', shuffle: true }, s.c),
+    x: Object.assign({ mode: 'study', grp: 'all', hideP: false, hideM: false, scope: 'all', shuffle: true }, s.x),
     v: Object.assign({ mode: 'study', topic: 0, hideP: false, hideM: false, dir: 'h2m', scope: 'all', shuffle: true }, s.v),
     g: Object.assign({ mode: 'study', grp: 'all', noPy: false, noKo: false, scope: 'all', shuffle: true }, s.g)
   };
@@ -1258,6 +1290,7 @@ let S = load();
 if (S.v.topic !== 'all' && !TOPICS[S.v.topic]) S.v.topic = 0;
 if (S.g.grp !== 'all' && !GROUPS[S.g.grp]) S.g.grp = 'all';
 if (S.s.grp !== 'all' && !SGROUPS.includes(S.s.grp)) S.s.grp = 'all';
+['m', 'c', 'x'].forEach(k => { if (S[k].grp !== 'all' && typeof S[k].grp !== 'number') S[k].grp = 'all'; });
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 save();
 
@@ -1289,8 +1322,8 @@ function weekIndex() {
 }
 
 /* ---------- routing ---------- */
-const VIEWS = ['home', 'vocab', 'grammar', 'sentence'];
-const secOf = v => v === 'vocab' ? 'v' : v === 'grammar' ? 'g' : 's';
+const VIEWS = ['home', 'vocab', 'grammar', 'sentence', 'measure', 'conj', 'situ'];
+const secOf = v => ({ vocab: 'v', grammar: 'g', sentence: 's', measure: 'm', conj: 'c', situ: 'x' })[v] || 's';
 let view = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
 function go(v, after) {
   view = v; resetArmed = false;
@@ -1310,7 +1343,11 @@ function renderTop() {
     b.setAttribute('aria-pressed', b.dataset.mode === sec.mode);
     b.textContent = b.dataset.mode === 'study' ? (view === 'sentence' ? '정답 보기' : '공부') : (view === 'sentence' ? '연습' : '확인');
   });
-  if (view === 'sentence') {
+  if (MCSEC.includes(secOf(view))) {
+    const sec = secOf(view);
+    const chip = (v, name, qs) => `<button class="chip" data-xgrp="${v}" aria-pressed="${String(S[sec].grp) === String(v)}">${name}<small>${qs.filter(q => S.mc[sec][q.qid] === 'k').length}/${qs.length}</small></button>`;
+    rail.innerHTML = chip('all', '전체', MCALL[sec]) + MC_GROUPS[sec].map((g, i) => chip(i, g, MCALL[sec].filter(q => q.g === i))).join('');
+  } else if (view === 'sentence') {
     const chip = (v, name, ss) => `<button class="chip" data-sgrp="${v}" aria-pressed="${String(S.s.grp) === String(v)}">${name}<small>${ss.filter(s => S.sres[s.id] === 'k').length}/${ss.length}</small></button>`;
     rail.innerHTML = chip('all', '전체', SENTS) + SGROUPS.map(i => chip(i, GROUPS[i], sentsOf(i))).join('');
   } else if (view === 'vocab') {
@@ -1350,6 +1387,10 @@ function renderHome() {
     if (P.gc.length) t += '<div class="sub">문법</div>' + P.gc.map(id => `<button class="row" data-go-card="${id}"><span class="nm"><span class="zhs">${esc(byId[id].t)}</span><span>${esc(byId[id].s)}</span></span><span class="rt">${gPill(byId[id])}<span class="go">›</span></span></button>`).join('');
     const ws = SENTS.filter(s => P.gc.includes(s.gid));
     if (ws.length) t += `<div class="sub">문장 배열</div><button class="row" data-sweek="${wi}"><span class="nm"><span>이번 주 문법으로 배열 연습</span></span><span class="rt">${ws.filter(s => S.sres[s.id] === 'k').length}/${ws.length} 맞힘<span class="go">›</span></span></button>`;
+    const extraRow = (v, name, n) => `<button class="row" data-view="${v}"><span class="nm"><span>${name}</span></span><span class="rt">${n}<span class="go">›</span></span></button>`;
+    if (wi === 8) t += '<div class="sub">양사</div>' + extraRow('measure', '양사 카드 공부하고 확인하기', `${mcRight('m')}/${MCALL.m.length} 맞힘`);
+    if (wi === 9) t += '<div class="sub">접속사</div>' + extraRow('conj', '접속사 카드 공부하고 확인하기', `${mcRight('c')}/${MCALL.c.length} 맞힘`);
+    if (wi === 10 || wi === 11) t += '<div class="sub">상황별 표현</div>' + extraRow('situ', '상황별 표현 듣고 따라 하기', `${mcRight('x')}/${MCALL.x.length} 맞힘`);
     if (!P.vt.length && !P.gc.length && wi >= 10) t += reviewTodo();
     todo = t;
   }
@@ -1374,6 +1415,7 @@ function renderHome() {
         <div class="stat"><span class="lab">단어 외움</span><span class="big">${known}<small> / ${ALL.length}</small></span><div class="meter"><i style="width:${known / ALL.length * 100}%"></i></div></div>
         <div class="stat"><span class="lab">문법 문제 맞힘</span><span class="big">${right}<small> / ${QTOTAL}</small></span><div class="meter"><i style="width:${right / QTOTAL * 100}%"></i></div></div>
         <div class="stat"><span class="lab">문장 배열 맞힘</span><span class="big">${sr}<small> / ${SENTS.length}</small></span><div class="meter"><i style="width:${sr / SENTS.length * 100}%"></i></div></div>
+        ${MCSEC.map(k => `<div class="stat"><span class="lab">${MC_NAME[k]} 맞힘</span><span class="big">${mcRight(k)}<small> / ${MCALL[k].length}</small></span><div class="meter"><i style="width:${mcRight(k) / MCALL[k].length * 100}%"></i></div></div>`).join('')}
       </div>
     </div>
     <div class="panel">
@@ -1382,6 +1424,7 @@ function renderHome() {
         <button class="rv" data-review="v" ${uw ? '' : 'disabled'}><b>${uw}</b><span>${uw ? '몰라요 단어 · 눌러서 다시 확인' : '몰라요 단어가 없어요'}</span></button>
         <button class="rv" data-review="g" ${wq ? '' : 'disabled'}><b>${wq}</b><span>${wq ? '틀린 문법 문제 · 눌러서 다시 풀기' : '틀린 문법 문제가 없어요'}</span></button>
         <button class="rv" data-review="s" ${sw ? '' : 'disabled'}><b>${sw}</b><span>${sw ? '틀린 문장 배열 · 눌러서 다시 풀기' : '틀린 문장 배열이 없어요'}</span></button>
+        ${MCSEC.map(k => { const n = mcWrong(k); return `<button class="rv" data-mopen="${k}:u" ${n ? '' : 'disabled'}><b>${n}</b><span>${n ? `틀린 ${MC_NAME[k]} · 눌러서 다시 풀기` : `틀린 ${MC_NAME[k]} 문제가 없어요`}</span></button>`; }).join('')}
       </div>
     </div>
     <div class="panel">
@@ -1391,8 +1434,9 @@ function renderHome() {
         <button class="cat on" data-view="grammar"><b>문법</b><span>${CARDS.length}개 카드 · ${QTOTAL}문제</span></button>
         <div class="cat soon"><b>헷갈리는 글자</b><span>준비 중</span></div>
         <button class="cat on" data-view="sentence"><b>문장 배열</b><span>쓰기 1부분 · ${SENTS.length}문제</span></button>
-        <div class="cat soon"><b>양사·접속사</b><span>준비 중</span></div>
-        <div class="cat soon"><b>상황별 표현</b><span>준비 중</span></div>
+        <button class="cat on" data-view="measure"><b>양사</b><span>${MEASURES.length}개 · ${MCALL.m.length}문제</span></button>
+        <button class="cat on" data-view="conj"><b>접속사</b><span>${CONJS.length}개 · ${MCALL.c.length}문제</span></button>
+        <button class="cat on" data-view="situ"><b>상황별 표현</b><span>${SITUS.length}가지 상황 · ${MCALL.x.length}문장</span></button>
       </div>
     </div>
     <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span></div>
@@ -1676,13 +1720,397 @@ function sCheck() {
 }
 function sNext() { if (sdeck && sdeck.checked !== null) { sdeck.i++; sdeck.checked = null; renderSentCheck(); window.scrollTo(0, 0); } }
 
+/* ---------- 양사 · 접속사 · 상황별 표현 ---------- */
+/* 문제: [문장, 보기(첫 번째가 정답), 해설] */
+const MGROUPS = ['사람·동물', '물건', '옷·탈것', '먹고 마시기', '돈·나이·단위', '양·종류', '동작 횟수'];
+const MEASURES = [
+{ id:'ge', g:0, h:'个', p:'gè', d:'사람·물건에 두루 써요. 가장 많이 쓰는 양사예요.', ex:'一个人 · 两个苹果 · 一个问题',
+  q:[['我有两（ ）问题。',['个','张','条'],'问题는 个로 세요.'],['他是一（ ）好人。',['个','本','只'],'사람은 个로 세요. 높일 때는 位를 써요.']] },
+{ id:'wei', g:0, h:'位', p:'wèi', d:'사람을 높여 셀 때 써요. 손님, 선생님 등.', ex:'一位老师 · 两位客人',
+  q:[['这（ ）老师姓王。',['位','条','本'],'선생님을 높여 셀 때는 位예요.'],['今天家里来了三（ ）客人。',['位','张','杯'],'손님은 位로 세요.']] },
+{ id:'kou', g:0, h:'口', p:'kǒu', d:'가족 식구 수를 셀 때 써요.', ex:'我家有四口人。',
+  q:[['我家有五（ ）人。',['口','张','本'],'식구 수는 口로 세요.'],['你家有几（ ）人？',['口','条','辆'],'"몇 식구예요?" → 几口人.']] },
+{ id:'zhi', g:0, h:'只', p:'zhī', d:'동물을 셀 때 써요. 짝 중 한쪽(손, 발)에도 써요.', ex:'一只猫 · 两只鸟 · 一只手',
+  q:[['她家有两（ ）猫。',['只','本','张'],'고양이 같은 동물은 只로 세요.'],['树上有一（ ）鸟。',['只','件','杯'],'새도 只로 세요.']] },
+{ id:'tiao', g:1, h:'条', p:'tiáo', d:'길고 가는 것을 셀 때 써요. 길, 강, 물고기, 바지.', ex:'一条路 · 一条鱼 · 一条裤子',
+  q:[['我买了一（ ）裤子。',['条','本','杯'],'바지·치마처럼 긴 옷은 条예요.'],['这（ ）路很长。',['条','张','瓶'],'길은 条로 세요.']] },
+{ id:'ben', g:1, h:'本', p:'běn', d:'책, 공책, 사전을 셀 때 써요.', ex:'一本书 · 两本词典',
+  q:[['我借了两（ ）书。',['本','张','条'],'책은 本이에요.'],['这（ ）词典是我的。',['本','杯','双'],'사전도 本으로 세요.']] },
+{ id:'zhang', g:1, h:'张', p:'zhāng', d:'평평한 것을 셀 때 써요. 종이, 표, 사진, 책상.', ex:'一张票 · 两张照片 · 一张桌子',
+  q:[['我买了两（ ）电影票。',['张','本','条'],'표는 张이에요.'],['这（ ）照片很漂亮。',['张','件','辆'],'사진도 평평하니까 张이에요.']] },
+{ id:'ba3', g:1, h:'把', p:'bǎ', d:'손잡이가 있는 것을 셀 때 써요. 우산, 의자.', ex:'一把伞 · 两把椅子',
+  q:[['外面下雨了，带一（ ）伞吧。',['把','张','本'],'우산은 把예요.'],['房间里有一张桌子和两（ ）椅子。',['把','条','杯'],'의자는 把로 세요.']] },
+{ id:'jia3', g:1, h:'家', p:'jiā', d:'가게, 식당, 회사를 셀 때 써요.', ex:'一家饭店 · 一家公司',
+  q:[['这（ ）饭店的菜很好吃。',['家','张','只'],'식당은 家로 세요.'],['他在一（ ）公司上班。',['家','本','双'],'회사도 家예요.']] },
+{ id:'jian3', g:2, h:'件', p:'jiàn', d:'윗옷과 일(사건)을 셀 때 써요.', ex:'一件衬衫 · 一件事',
+  q:[['这（ ）衬衫多少钱？',['件','条','张'],'셔츠 같은 윗옷은 件이에요.'],['我想告诉你一（ ）事。',['件','本','辆'],'일(事)도 件으로 세요.']] },
+{ id:'shuang', g:2, h:'双', p:'shuāng', d:'짝을 이루는 것을 셀 때 써요. 신발, 젓가락.', ex:'一双鞋 · 一双筷子',
+  q:[['我想买一（ ）皮鞋。',['双','件','张'],'신발 한 켤레는 一双이에요.'],['服务员，请给我一（ ）筷子。',['双','本','辆'],'젓가락 한 벌도 一双이에요.']] },
+{ id:'liang', g:2, h:'辆', p:'liàng', d:'차, 자전거 같은 탈것을 셀 때 써요.', ex:'一辆车 · 一辆自行车',
+  q:[['我新买了一（ ）自行车。',['辆','张','杯'],'자전거는 辆이에요.'],['门口有两（ ）出租车。',['辆','本','双'],'택시도 辆으로 세요.']] },
+{ id:'bei1', g:3, h:'杯', p:'bēi', d:'잔, 컵에 담긴 것을 셀 때 써요.', ex:'一杯茶 · 两杯咖啡',
+  q:[['我想喝一（ ）咖啡。',['杯','本','条'],'커피 한 잔 → 一杯咖啡.'],['请给我两（ ）水。',['杯','张','双'],'물 두 잔 → 两杯水.']] },
+{ id:'ping', g:3, h:'瓶', p:'píng', d:'병에 담긴 것을 셀 때 써요.', ex:'一瓶水 · 两瓶啤酒',
+  q:[['冰箱里有三（ ）啤酒。',['瓶','张','本'],'맥주 세 병 → 三瓶啤酒.'],['我去超市买了两（ ）牛奶。',['瓶','件','双'],'우유 두 병 → 两瓶牛奶.']] },
+{ id:'wan', g:3, h:'碗', p:'wǎn', d:'그릇, 공기에 담긴 것을 셀 때 써요.', ex:'一碗米饭 · 一碗面条',
+  q:[['我饿了，想吃一（ ）面条。',['碗','张','本'],'국수 한 그릇 → 一碗面条.'],['他吃了两（ ）米饭。',['碗','条','辆'],'밥 두 공기 → 两碗米饭.']] },
+{ id:'kuai', g:4, h:'块', p:'kuài', d:'돈(위안, 구어)과 덩어리·조각을 셀 때 써요.', ex:'十块钱 · 一块蛋糕',
+  q:[['这个苹果五（ ）钱。',['块','张','本'],'돈 → 五块钱.'],['我吃了一（ ）蛋糕。',['块','双','辆'],'케이크 한 조각 → 一块蛋糕.']] },
+{ id:'sui', g:4, h:'岁', p:'suì', d:'나이를 셀 때 써요.', ex:'三岁 · 二十岁',
+  q:[['我妹妹今年八（ ）。',['岁','年','次'],'나이는 岁예요. 年은 "해"예요.'],['你孩子几（ ）了？',['岁','本','张'],'"아이가 몇 살이에요?" → 几岁.']] },
+{ id:'jin', g:4, h:'斤', p:'jīn', d:'무게 단위 근(500g)이에요. 과일, 고기를 살 때 써요.', ex:'一斤苹果 · 两斤羊肉',
+  q:[['我买了两（ ）苹果。',['斤','本','张'],'과일 무게 → 两斤苹果.'],['这种葡萄十块钱一（ ）。',['斤','双','辆'],'"한 근에 10위안" → 十块钱一斤.']] },
+{ id:'ceng', g:4, h:'层', p:'céng', d:'건물의 층을 셀 때 써요.', ex:'三层 · 二十层的楼',
+  q:[['我家住在十二（ ）。',['层','张','条'],'12층 → 十二层.'],['这个楼有多少（ ）？',['层','本','双'],'건물 층수 → 多少层.']] },
+{ id:'jie', g:4, h:'节', p:'jié', d:'수업 시간(교시)을 셀 때 써요.', ex:'两节课 · 第一节课',
+  q:[['我今天上午有四（ ）课。',['节','张','双'],'수업 4교시 → 四节课.'],['下一（ ）是数学课。',['节','辆','瓶'],'다음 교시 → 下一节.']] },
+{ id:'zhong', g:5, h:'种', p:'zhǒng', d:'종류를 셀 때 써요.', ex:'三种颜色 · 这种水果',
+  q:[['这（ ）水果叫什么？',['种','张','辆'],'"이런 종류의 과일" → 这种水果.'],['商店里有三（ ）颜色的衬衫。',['种','本','双'],'세 가지 색 → 三种颜色.']] },
+{ id:'xie', g:5, h:'些', p:'xiē', d:'정해지지 않은 여러 개(몇몇, 약간)를 나타내요. 这些, 那些, 一些.', ex:'一些人 · 这些东西',
+  q:[['这（ ）东西是谁的？',['些','张','辆'],'"이 물건들" → 这些东西.'],['我去超市买了一（ ）水果。',['些','本','辆'],'과일 약간 → 一些水果.']] },
+{ id:'dianr', g:5, h:'点儿', p:'diǎnr', d:'조금, 약간. 一点儿로 많이 써요.', ex:'喝一点儿水 · 便宜一点儿',
+  q:[['能便宜一（ ）吗？',['点儿','次','本'],'"좀 싸게" → 便宜一点儿.'],['我只会说一（ ）汉语。',['点儿','遍','辆'],'"중국어를 조금" → 一点儿汉语.']] },
+{ id:'ci', g:6, h:'次', p:'cì', d:'동작의 횟수(번)를 셀 때 써요.', ex:'去过两次 · 第一次',
+  q:[['我去过三（ ）北京。',['次','遍','张'],'가 본 횟수는 次예요. 遍은 처음부터 끝까지 한 번이에요.'],['这是我第一（ ）来中国。',['次','遍','本'],'"처음으로" → 第一次.']] },
+{ id:'bian', g:6, h:'遍', p:'biàn', d:'처음부터 끝까지 한 번 하는 횟수예요. 읽기, 말하기, 듣기.', ex:'再说一遍 · 看了三遍',
+  q:[['请你再说一（ ）。',['遍','本','张'],'"다시 한 번 말해 주세요" → 再说一遍.'],['这本书我看了两（ ）。',['遍','张','辆'],'책을 처음부터 끝까지 두 번 → 两遍.']] },
+{ id:'xia3', g:6, h:'下', p:'xià', d:'一下로 써서 "좀 ~하다"라는 가벼운 느낌을 줘요.', ex:'等一下 · 看一下',
+  q:[['请等一（ ）。',['下','本','张'],'"잠깐 기다려 주세요" → 等一下.'],['你看一（ ）这个句子。',['下','双','辆'],'"좀 봐" → 看一下.']] }
+];
+
+const CGROUPS = ['나란히·더하기', '반대·이유', '조건·순서'];
+const CONJS = [
+{ id:'he', g:0, t:'和', p:'hé', m:'~와(과)', f:'명사 + 和 + 명사',
+  ex:[['我和朋友一起去公园。','Wǒ hé péngyou yìqǐ qù gōngyuán.','나는 친구와 함께 공원에 간다.']],
+  tip:'명사끼리 이어요. 문장과 문장을 이을 때는 쓰지 않아요.',
+  q:[['我（ ）妹妹都喜欢猫。',['和','而且','但是'],'명사(我, 妹妹)를 이으니 和예요.'],['바른 문장은?',['我喜欢苹果和香蕉。','我喜欢苹果，和他喜欢香蕉。','我和喜欢苹果香蕉。'],'和는 명사와 명사 사이에 와요.']] },
+{ id:'huozhe', g:0, t:'或者 / 还是', p:'huòzhě / háishi', m:'또는 / 아니면', f:'A + 或者 + B (평서문) / A + 还是 + B？ (의문문)',
+  ex:[['你喝茶还是喝咖啡？','Nǐ hē chá háishi hē kāfēi?','차 마실래, 아니면 커피 마실래?'],['我们星期六或者星期天去吧。','Wǒmen xīngqīliù huòzhě xīngqītiān qù ba.','우리 토요일이나 일요일에 가자.']],
+  tip:'물어볼 때(A 아니면 B?)는 还是, 말할 때(A 또는 B)는 或者예요. 시험에 자주 나와요.',
+  q:[['你想吃米饭（ ）面条？',['还是','或者','而且'],'의문문에서 고르라고 할 때는 还是예요.'],['我们明天（ ）后天去都可以。',['或者','还是','所以'],'평서문에서 "또는"은 或者예요.']] },
+{ id:'erqie', g:0, t:'而且', p:'érqiě', m:'게다가, 또한', f:'A，而且 + B',
+  ex:[['这个房间很大，而且很干净。','Zhège fángjiān hěn dà, érqiě hěn gānjìng.','이 방은 크고, 게다가 깨끗하다.']],
+  tip:'앞의 내용에 비슷한 내용을 더 보태요. 不但과 짝으로도 자주 써요.',
+  q:[['他会说汉语，（ ）说得很好。',['而且','但是','或者'],'더 보태는 내용이니 而且예요.'],['这家饭店的菜很便宜，（ ）很好吃。',['而且','所以','还是'],'싸고 게다가 맛있다 → 而且.']] },
+{ id:'budan2', g:0, t:'不但…而且…', p:'búdàn…érqiě…', m:'~뿐만 아니라 ~도', f:'(주어) + 不但 + A，而且 + B',
+  ex:[['她不但漂亮，而且很聪明。','Tā búdàn piàoliang, érqiě hěn cōngming.','그녀는 예쁠 뿐만 아니라 똑똑하다.']],
+  tip:'주어가 같으면 주어는 不但 앞에, 주어가 다르면 不但 뒤에 와요.',
+  q:[['他不但会唱歌，（ ）会跳舞。',['而且','但是','所以'],'不但…而且… 짝이에요.'],['（ ）我喜欢，我妈妈也喜欢。',['不但','虽然','因为'],'주어가 다를 때: 不但 + 주어A …, 주어B + 也 ….']] },
+{ id:'chule2', g:0, t:'除了…以外', p:'chúle…yǐwài', m:'~외에 / ~을 빼고', f:'除了 + A + 以外，还 / 也 + B / 除了 + A + 以外，都 + B',
+  ex:[['除了猫以外，我还喜欢狗。','Chúle māo yǐwài, wǒ hái xǐhuan gǒu.','고양이 말고 개도 좋아한다.']],
+  tip:'뒤에 还/也가 오면 "추가", 都가 오면 "제외"예요.',
+  q:[['（ ）汉语以外，他还会说英语。',['除了','虽然','因为'],'除了…以外，还…: ~외에 ~도.'],['除了他以外，我们（ ）去了。',['都','还','就'],'그 사람만 빼고 모두 → 都.']] },
+{ id:'danshi', g:1, t:'但是 / 可是', p:'dànshì / kěshì', m:'그러나, 하지만', f:'A，但是 / 可是 + B',
+  ex:[['我很想去，但是没有时间。','Wǒ hěn xiǎng qù, dànshì méiyǒu shíjiān.','정말 가고 싶지만 시간이 없다.']],
+  tip:'앞과 반대되는 내용이 와요. 虽然과 짝으로 자주 써요.',
+  q:[['这件衣服很漂亮，（ ）太贵了。',['但是','所以','而且'],'예쁘다 ↔ 너무 비싸다: 반대 → 但是.'],['我给他打电话了，（ ）他没接。',['可是','因为','或者'],'전화했다 ↔ 안 받았다: 반대 → 可是.']] },
+{ id:'suiran2', g:1, t:'虽然…但是…', p:'suīrán…dànshì…', m:'비록 ~지만', f:'虽然 + A，但是 + B',
+  ex:[['虽然很累，但是我很高兴。','Suīrán hěn lèi, dànshì wǒ hěn gāoxìng.','피곤하지만 나는 기쁘다.']],
+  tip:'虽然은 所以와 짝이 될 수 없어요. 꼭 但是/可是와 짝지어요.',
+  q:[['（ ）外面很冷，但是他没穿很多衣服。',['虽然','因为','如果'],'뒤에 但是가 있으니 虽然이에요.'],['虽然我们是邻居，（ ）不太认识。',['但是','所以','而且'],'虽然…但是… 짝이에요.']] },
+{ id:'yinwei2', g:1, t:'因为…所以…', p:'yīnwèi…suǒyǐ…', m:'~때문에 그래서', f:'因为 + 원인，所以 + 결과',
+  ex:[['因为下雨了，所以我们没去。','Yīnwèi xià yǔ le, suǒyǐ wǒmen méi qù.','비가 와서 우리는 안 갔다.']],
+  tip:'원인이 먼저, 결과가 뒤에 와요. 因为나 所以 하나만 써도 돼요.',
+  q:[['（ ）我感冒了，所以没去上班。',['因为','虽然','如果'],'원인(감기) → 因为.'],['因为路上车太多，（ ）我迟到了。',['所以','但是','或者'],'결과(지각) → 所以.']] },
+{ id:'ruguo2', g:2, t:'如果…就…', p:'rúguǒ…jiù…', m:'만약 ~라면', f:'如果 + A，(주어) + 就 + B',
+  ex:[['如果你累了，就休息一下吧。','Rúguǒ nǐ lèi le, jiù xiūxi yíxià ba.','피곤하면 좀 쉬어.']],
+  tip:'就는 뒤 문장의 주어 뒤에 와요.',
+  q:[['（ ）明天不下雨，我们就去爬山。',['如果','虽然','因为'],'가정(내일 비가 안 오면) → 如果.'],['如果你有问题，（ ）给我打电话。',['就','才','都'],'如果…就… 짝이에요.']] },
+{ id:'zhiyao', g:2, t:'只要…就…', p:'zhǐyào…jiù…', m:'~하기만 하면', f:'只要 + 조건，(주어) + 就 + 결과',
+  ex:[['只要你努力，就一定能学好。','Zhǐyào nǐ nǔlì, jiù yídìng néng xué hǎo.','노력하기만 하면 반드시 잘 배울 수 있다.']],
+  tip:'그 조건만 있으면 결과가 생긴다는 뜻이에요. 3급 지문에도 자주 보여요.',
+  q:[['（ ）你努力，就一定能考好。',['只要','虽然','或者'],'조건 → 只要…就….'],['只要有时间，我（ ）去看你。',['就','才','但是'],'只要…就… 짝이에요.']] },
+{ id:'ranhou', g:2, t:'先…然后…', p:'xiān…ránhòu…', m:'먼저 ~하고 그다음에', f:'先 + A，然后 / 再 + B',
+  ex:[['我们先吃饭，然后去看电影。','Wǒmen xiān chī fàn, ránhòu qù kàn diànyǐng.','우리 먼저 밥 먹고 그다음에 영화 보러 가자.']],
+  tip:'일의 순서를 말해요. 然后 대신 再를 써도 돼요.',
+  q:[['我先洗澡，（ ）睡觉。',['然后','所以','但是'],'순서 → 先…然后….'],['你先往前走，（ ）往左走。',['然后','而且','虽然'],'길 안내 순서 → 然后.']] },
+{ id:'yijiu2', g:2, t:'一…就…', p:'yī…jiù…', m:'~하자마자', f:'(주어) + 一 + A + 就 + B',
+  ex:[['我一到家就给你打电话。','Wǒ yí dào jiā jiù gěi nǐ dǎ diànhuà.','집에 도착하자마자 너에게 전화할게.']],
+  tip:'一와 就는 각각 동사 앞에 와요.',
+  q:[['他一下课（ ）去图书馆了。',['就','才','还'],'一…就…: ~하자마자.'],['我（ ）到北京就给你打电话。',['一','先','都'],'뒤에 就가 있으니 一예요.']] },
+{ id:'yibian2', g:2, t:'一边…一边…', p:'yìbiān…yìbiān…', m:'~하면서 ~하다', f:'(주어) + 一边 + A + 一边 + B',
+  ex:[['他一边吃饭一边看电视。','Tā yìbiān chī fàn yìbiān kàn diànshì.','그는 밥을 먹으면서 TV를 본다.']],
+  tip:'두 동작을 동시에 할 때 써요.',
+  q:[['他喜欢一边听音乐，（ ）做作业。',['一边','一起','一直'],'一边…一边… 짝이에요.'],['我们（ ）走一边聊天吧。',['一边','一起','一共'],'뒤에 一边이 있으니 앞도 一边.']] }
+];
+
+const SITUS = [
+{ name:'식당', items:[
+  ['你好，我要点菜。','Nǐ hǎo, wǒ yào diǎn cài.','안녕하세요, 주문할게요.'],
+  ['请给我菜单。','Qǐng gěi wǒ càidān.','메뉴판 좀 주세요.'],
+  ['你们这儿什么菜好吃？','Nǐmen zhèr shénme cài hǎochī?','여기는 어떤 요리가 맛있어요?'],
+  ['我不吃羊肉。','Wǒ bù chī yángròu.','저는 양고기를 안 먹어요.'],
+  ['来一碗米饭。','Lái yì wǎn mǐfàn.','밥 한 공기 주세요.'],
+  ['请再给我一杯水。','Qǐng zài gěi wǒ yì bēi shuǐ.','물 한 잔 더 주세요.'],
+  ['太好吃了！','Tài hǎochī le!','너무 맛있어요!'],
+  ['服务员，买单。','Fúwùyuán, mǎidān.','여기요, 계산할게요.'] ] },
+{ name:'쇼핑', items:[
+  ['这个多少钱？','Zhège duōshao qián?','이거 얼마예요?'],
+  ['太贵了，能便宜一点儿吗？','Tài guì le, néng piányi yìdiǎnr ma?','너무 비싸요. 좀 싸게 해 줄 수 있어요?'],
+  ['我可以试试吗？','Wǒ kěyǐ shìshi ma?','입어 봐도 돼요?'],
+  ['有没有大一点儿的？','Yǒu méiyǒu dà yìdiǎnr de?','좀 더 큰 거 있어요?'],
+  ['我要这件。','Wǒ yào zhè jiàn.','이걸로 할게요.'],
+  ['可以用信用卡吗？','Kěyǐ yòng xìnyòngkǎ ma?','신용카드 돼요?'],
+  ['我只是看看。','Wǒ zhǐshì kànkan.','그냥 구경하는 거예요.'],
+  ['一共多少钱？','Yígòng duōshao qián?','모두 얼마예요?'] ] },
+{ name:'길 묻기', items:[
+  ['请问，洗手间在哪儿？','Qǐngwèn, xǐshǒujiān zài nǎr?','실례지만, 화장실이 어디예요?'],
+  ['地铁站怎么走？','Dìtiězhàn zěnme zǒu?','지하철역에 어떻게 가요?'],
+  ['离这儿远吗？','Lí zhèr yuǎn ma?','여기서 멀어요?'],
+  ['一直往前走。','Yìzhí wǎng qián zǒu.','앞으로 쭉 가세요.'],
+  ['到路口往左走。','Dào lùkǒu wǎng zuǒ zǒu.','길목에서 왼쪽으로 가세요.'],
+  ['就在银行旁边。','Jiù zài yínháng pángbiān.','바로 은행 옆에 있어요.'],
+  ['走路要十分钟。','Zǒulù yào shí fēnzhōng.','걸어서 10분 걸려요.'],
+  ['附近有超市吗？','Fùjìn yǒu chāoshì ma?','근처에 슈퍼마켓 있어요?'] ] },
+{ name:'교통', items:[
+  ['师傅，去机场。','Shīfu, qù jīchǎng.','기사님, 공항 가 주세요.'],
+  ['到火车站要多长时间？','Dào huǒchēzhàn yào duō cháng shíjiān?','기차역까지 얼마나 걸려요?'],
+  ['请在这儿停一下。','Qǐng zài zhèr tíng yíxià.','여기서 세워 주세요.'],
+  ['这路公共汽车去公园吗？','Zhè lù gōnggòng qìchē qù gōngyuán ma?','이 버스 공원에 가요?'],
+  ['我坐地铁去上班。','Wǒ zuò dìtiě qù shàngbān.','저는 지하철을 타고 출근해요.'],
+  ['下一站是哪儿？','Xià yí zhàn shì nǎr?','다음 역은 어디예요?'],
+  ['路上车太多了。','Lùshang chē tài duō le.','길에 차가 너무 많아요.'],
+  ['我在哪儿下车？','Wǒ zài nǎr xià chē?','어디서 내려요?'] ] },
+{ name:'병원', items:[
+  ['你哪儿不舒服？','Nǐ nǎr bù shūfu?','어디가 불편하세요?'],
+  ['我头疼。','Wǒ tóu téng.','머리가 아파요.'],
+  ['我感冒了，有点儿发烧。','Wǒ gǎnmào le, yǒudiǎnr fāshāo.','감기에 걸렸고 열이 좀 나요.'],
+  ['这个药一天吃几次？','Zhège yào yì tiān chī jǐ cì?','이 약은 하루에 몇 번 먹어요?'],
+  ['一天三次，饭后吃。','Yì tiān sān cì, fàn hòu chī.','하루 세 번, 식후에 드세요.'],
+  ['多喝水，好好儿休息。','Duō hē shuǐ, hǎohāor xiūxi.','물 많이 마시고 푹 쉬세요.'],
+  ['我想请一天假。','Wǒ xiǎng qǐng yì tiān jià.','하루 휴가를 내고 싶어요.'],
+  ['你好点儿了吗？','Nǐ hǎo diǎnr le ma?','좀 나아졌어요?'] ] },
+{ name:'호텔', items:[
+  ['我想订一个房间。','Wǒ xiǎng dìng yí ge fángjiān.','방 하나 예약하고 싶어요.'],
+  ['我要住三天。','Wǒ yào zhù sān tiān.','3일 묵을 거예요.'],
+  ['请给我看一下您的护照。','Qǐng gěi wǒ kàn yíxià nín de hùzhào.','여권 좀 보여 주세요.'],
+  ['房间里的空调坏了。','Fángjiān li de kōngtiáo huài le.','방 에어컨이 고장 났어요.'],
+  ['早饭几点开始？','Zǎofàn jǐ diǎn kāishǐ?','아침 식사는 몇 시에 시작해요?'],
+  ['电梯在那边。','Diàntī zài nàbiān.','엘리베이터는 저쪽에 있어요.'],
+  ['房间里可以上网吗？','Fángjiān li kěyǐ shàngwǎng ma?','방에서 인터넷 돼요?'],
+  ['我的房间在几层？','Wǒ de fángjiān zài jǐ céng?','제 방은 몇 층이에요?'] ] },
+{ name:'학교', items:[
+  ['老师，这个字怎么读？','Lǎoshī, zhège zì zěnme dú?','선생님, 이 글자 어떻게 읽어요?'],
+  ['我没听懂，请再说一遍。','Wǒ méi tīng dǒng, qǐng zài shuō yí biàn.','못 알아들었어요. 다시 한 번 말해 주세요.'],
+  ['这个用汉语怎么说？','Zhège yòng Hànyǔ zěnme shuō?','이거 중국어로 뭐라고 해요?'],
+  ['今天的作业是什么？','Jīntiān de zuòyè shì shénme?','오늘 숙제가 뭐예요?'],
+  ['明天有考试。','Míngtiān yǒu kǎoshì.','내일 시험이 있어요.'],
+  ['你考得怎么样？','Nǐ kǎo de zěnmeyàng?','시험 어떻게 봤어?'],
+  ['我们一起去图书馆吧。','Wǒmen yìqǐ qù túshūguǎn ba.','우리 같이 도서관 가자.'],
+  ['对不起，我迟到了。','Duìbuqǐ, wǒ chídào le.','죄송해요, 늦었어요.'] ] },
+{ name:'회사', items:[
+  ['经理在办公室吗？','Jīnglǐ zài bàngōngshì ma?','사장님 사무실에 계세요?'],
+  ['会议几点开始？','Huìyì jǐ diǎn kāishǐ?','회의는 몇 시에 시작해요?'],
+  ['我今天很忙，没时间吃饭。','Wǒ jīntiān hěn máng, méi shíjiān chī fàn.','오늘 너무 바빠서 밥 먹을 시간이 없어요.'],
+  ['这件事我来解决。','Zhè jiàn shì wǒ lái jiějué.','이 일은 제가 해결할게요.'],
+  ['我给您发电子邮件。','Wǒ gěi nín fā diànzǐ yóujiàn.','이메일 보내 드릴게요.'],
+  ['明天我想请假。','Míngtiān wǒ xiǎng qǐngjià.','내일 휴가를 내고 싶어요.'],
+  ['工作完成了吗？','Gōngzuò wánchéng le ma?','일 다 끝났어요?'],
+  ['我觉得这个办法很好。','Wǒ juéde zhège bànfǎ hěn hǎo.','이 방법이 좋은 것 같아요.'] ] },
+{ name:'전화·약속', items:[
+  ['喂，你好！','Wéi, nǐ hǎo!','여보세요, 안녕하세요!'],
+  ['请问，小王在吗？','Qǐngwèn, Xiǎo Wáng zài ma?','실례지만 샤오왕 있어요?'],
+  ['你打错了。','Nǐ dǎ cuò le.','전화 잘못 거셨어요.'],
+  ['我一会儿给你打电话。','Wǒ yíhuìr gěi nǐ dǎ diànhuà.','이따가 전화할게.'],
+  ['我们几点见面？','Wǒmen jǐ diǎn jiànmiàn?','우리 몇 시에 만나?'],
+  ['明天下午三点，在公园门口见。','Míngtiān xiàwǔ sān diǎn, zài gōngyuán ménkǒu jiàn.','내일 오후 3시에 공원 입구에서 만나.'],
+  ['对不起，我有点儿事，不能去了。','Duìbuqǐ, wǒ yǒudiǎnr shì, bù néng qù le.','미안, 일이 좀 있어서 못 가게 됐어.'],
+  ['没关系，下次再说吧。','Méi guānxi, xià cì zài shuō ba.','괜찮아, 다음에 다시 얘기하자.'] ] }
+];
+
+const MCSEC = ['m', 'c', 'x'];
+const SEC_VIEW = { m: 'measure', c: 'conj', x: 'situ' };
+const MC_NAME = { m: '양사', c: '접속사', x: '상황별 표현' };
+const MC_GROUPS = { m: MGROUPS, c: CGROUPS, x: SITUS.map(s => s.name) };
+const MCALL = {
+  m: MEASURES.flatMap(it => it.q.map((q, i) => ({ qid: it.id + '-' + i, g: it.g, ref: it.id, refLabel: it.h, stem: q[0], opts: q[1], expl: q[2] }))),
+  c: CONJS.flatMap(it => it.q.map((q, i) => ({ qid: it.id + '-' + i, g: it.g, ref: it.id, refLabel: it.t, stem: q[0], opts: q[1], expl: q[2] }))),
+  x: SITUS.flatMap((sc, g) => sc.items.map((e, i) => ({ qid: 'x' + g + '-' + i, g, ref: null, stem: e[2], zh: e[0], py: e[1], expl: e[1] })))
+};
+const mcRight = sec => MCALL[sec].filter(q => S.mc[sec][q.qid] === 'k').length;
+const mcWrong = sec => MCALL[sec].filter(q => S.mc[sec][q.qid] === 'u').length;
+const mdeck = { m: null, c: null, x: null };
+function mcPill(sec, ids) {
+  const done = ids.filter(id => S.mc[sec][id]);
+  if (!done.length) return '<span class="pill">안 풀었음</span>';
+  const ok = ids.filter(id => S.mc[sec][id] === 'k').length;
+  const cls = ok === ids.length ? 'k' : (ids.some(id => S.mc[sec][id] === 'u') ? 'u' : '');
+  return `<span class="pill ${cls}">${ok}/${ids.length}</span>`;
+}
+const listOf = sec => S[sec].grp === 'all' ? MC_GROUPS[sec].map((_, i) => i) : [S[sec].grp];
+
+function renderMeasureStudy() {
+  main.innerHTML = `<div class="tools"><span class="hint">숫자 + 양사 + 명사 순서예요. 예: 两 + 本 + 书</span></div>` +
+    listOf('m').map(g => {
+      const its = MEASURES.filter(m => m.g === g);
+      return `<section class="grp"><h2>${MGROUPS[g]}<small>${its.length}개</small></h2><div class="mgrid">${its.map(m => `
+        <article class="mw" id="m-${m.id}">
+          <div class="mh"><span class="h">${m.h}</span><span class="p">${m.p}</span>${mcPill('m', m.q.map((_, i) => m.id + '-' + i))}</div>
+          <div class="d">${esc(m.d)}</div>
+          <div class="mex">${esc(m.ex)}</div>
+        </article>`).join('')}</div></section>`;
+    }).join('');
+}
+function renderConjStudy() {
+  main.innerHTML = `<div class="tools"><span class="hint">노란 표시가 접속사예요. 짝을 이루는 말을 같이 외우세요.</span></div>` +
+    listOf('c').map(g => {
+      const its = CONJS.filter(c => c.g === g);
+      return `<section class="grp"><h2>${CGROUPS[g]}<small>${its.length}개</small></h2><div class="cards">${its.map(c => {
+        const keys = c.t.split(/[…\/ ]+/).filter(Boolean);
+        return `<article class="g" id="c-${c.id}">
+          <div class="gh"><h3>${esc(c.t)}</h3><span class="sub">${esc(c.m)}</span>${mcPill('c', c.q.map((_, i) => c.id + '-' + i))}</div>
+          <div class="cp">${esc(c.p)}</div>
+          <div class="formula">${formulaHTML(c.f)}</div>
+          <ul class="ex">${c.ex.map(e => `<li><span class="s">${highlight(e[0], keys)}</span><span class="py">${esc(e[1])}</span><span class="ko">${esc(e[2])}</span></li>`).join('')}</ul>
+          <p class="desc tipline">${esc(c.tip)}</p>
+        </article>`;
+      }).join('')}</div></section>`;
+    }).join('');
+}
+function renderSituStudy() {
+  const X = S.x;
+  main.innerHTML = `<div class="tools">
+      <button class="tog" data-tog="hideP" aria-pressed="${X.hideP}">병음 가리기</button>
+      <button class="tog" data-tog="hideM" aria-pressed="${X.hideM}">뜻 가리기</button>
+      <span class="hint">${X.hideP || X.hideM ? '문장을 누르면 가린 부분이 보여요' : (canSpeak ? '스피커 버튼을 누르면 발음이 나와요' : '')}</span>
+    </div>
+    <div class="${X.hideP ? 'hideXP ' : ''}${X.hideM ? 'hideXM' : ''}">` +
+    listOf('x').map(g => `<section class="grp"><h2>${SITUS[g].name}<small>${SITUS[g].items.length}개</small></h2><div class="xlist">${SITUS[g].items.map((e, i) => `
+      <div class="xrow" role="button" tabindex="0" data-st="${S.mc.x['x' + g + '-' + i] || ''}">
+        <i class="dot"></i>
+        <div class="xt"><span class="xz">${esc(e[0])}</span><span class="xp">${esc(e[1])}</span><span class="xk">${esc(e[2])}</span></div>
+        ${canSpeak ? `<button class="say" data-say="${esc(e[0])}" aria-label="발음 듣기">${SPK}</button>` : ''}
+      </div>`).join('')}</div></section>`).join('') + `</div>`;
+}
+
+function buildMDeck(sec, items) {
+  let qs = items;
+  if (!qs) {
+    const P = S[sec];
+    qs = MCALL[sec].filter(q => P.grp === 'all' || q.g === P.grp);
+    if (P.scope === 'u') qs = qs.filter(q => S.mc[sec][q.qid] === 'u');
+    if (P.scope === 'n') qs = qs.filter(q => !S.mc[sec][q.qid]);
+  }
+  qs = qs.map(q => {
+    let opts = q.opts;
+    if (sec === 'x') {
+      const pool = SITUS[q.g].items.map(e => e[0]).filter(z => z !== q.zh);
+      opts = [q.zh].concat(shuffle(pool.slice()).slice(0, 2));
+    }
+    return Object.assign({}, q, { opts, order: shuffle([0, 1, 2]) });
+  });
+  if (S[sec].shuffle) shuffle(qs);
+  mdeck[sec] = { items: qs, i: 0, picked: null, right: 0, wrong: [] };
+}
+function renderMCCheck(sec) {
+  if (!mdeck[sec]) buildMDeck(sec);
+  const D = mdeck[sec], n = D.items.length, P = S[sec];
+  let body;
+  if (!n) {
+    body = `<div class="empty">${P.scope === 'u' ? '여기서 틀린 문제가 없어요.<br>범위를 ‘전체’로 바꿔서 시작해 보세요.' : '이 분류의 문제를 모두 한 번씩 풀었어요.<br>범위를 ‘전체’나 ‘틀린 것만’으로 바꿔 보세요.'}</div>`;
+  } else if (D.i >= n) {
+    const w = D.wrong;
+    let list = '';
+    if (w.length && sec === 'x') list = `<div class="vmiss">${w.map(q => `<div><b>${esc(q.zh)}</b><span>${esc(q.py)}</span>${esc(q.stem)}</div>`).join('')}</div>`;
+    else if (w.length) {
+      const refs = [...new Set(w.map(q => q.ref))];
+      list = `<p class="hint">틀린 카드를 다시 읽어 보세요.</p><div class="todo">${refs.map(r => { const q = w.find(x => x.ref === r); return `<button class="row" data-goref="${sec}:${r}"><span class="nm"><span class="zhs">${esc(q.refLabel)}</span></span><span class="rt">카드 보기<span class="go">›</span></span></button>`; }).join('')}</div>`;
+    }
+    body = `<div class="done"><h2>다 풀었어요!</h2>
+      <p class="score"><b class="sk">${D.right}</b> 맞힘 &nbsp;·&nbsp; <b class="su">${w.length}</b> 틀림</p>
+      ${w.length ? list : '<p class="hint">전부 맞혔어요. 다른 분류도 풀어 보세요.</p>'}
+      <div class="acts">${w.length ? `<button class="btn bad" data-act="mretry">틀린 ${w.length}문제 다시</button>` : ''}<button class="btn primary" data-act="mrestart">처음부터 다시</button></div></div>`;
+  } else {
+    const q = D.items[D.i], answered = D.picked !== null, ok = D.picked === 0;
+    const isBlank = q.stem.includes('（ ）');
+    const tag = sec === 'x' ? `${SITUS[q.g].name} · 이 말을 중국어로 하면?` : (isBlank ? '빈칸에 알맞은 것을 고르세요' : '알맞은 것을 고르세요');
+    const stem = sec === 'x' ? `<p class="stem">${esc(q.stem)}</p>` : `<p class="stem">${stemHTML(q.stem, answered && isBlank ? q.opts[0] : null)}</p>`;
+    const extra = sec === 'x'
+      ? `<div><span class="zhs">${esc(q.zh)}</span> ${canSpeak ? `<button class="lnk" data-say="${esc(q.zh)}">발음 듣기</button>` : ''}</div><div class="hint">${esc(q.py)}</div>`
+      : `<button class="lnk" data-goref="${sec}:${q.ref}">${esc(q.refLabel)} 카드 보기</button>`;
+    body = `<div class="prog"><span>${MC_NAME[sec]} · ${MC_GROUPS[sec][q.g]}</span><span class="num">${D.i + 1} / ${n}</span></div>
+      <div class="track"><i style="width:${D.i / n * 100}%"></i></div>
+      <div class="qc">
+        <span class="tag">${tag}</span>
+        ${stem}
+        <div class="choices">${q.order.map((oi, idx) => {
+          const cls = answered && oi === 0 ? ' ok' : answered && oi === D.picked ? ' no' : '';
+          return `<button class="ch${cls}" data-mpick="${oi}" ${answered ? 'disabled' : ''}><span class="n">${idx + 1}</span><span class="t">${esc(q.opts[oi])}</span></button>`;
+        }).join('')}</div>
+        ${answered ? `<div class="expl"><div>${ok ? '<b class="k">정답!</b>' : '<b class="u">아쉬워요.</b>'} ${sec === 'x' ? '' : esc(q.expl)}</div>${extra}</div>` : ''}
+      </div>
+      ${answered ? '<button class="btn primary" data-act="mnext">다음 문제</button>' : ''}
+      <div class="keys">키보드: 1 · 2 · 3 = 고르기 · Enter = 다음</div>`;
+  }
+  main.innerHTML = `<div class="check">
+    <div class="opts">
+      <div class="opt"><span>범위</span><div class="seg sm">${segBtn(sec, 'scope', 'all', '전체')}${segBtn(sec, 'scope', 'u', '틀린 것만')}${segBtn(sec, 'scope', 'n', '안 푼 것')}</div></div>
+      <div class="opt"><span>순서</span><div class="seg sm">${segBtn(sec, 'shuffle', '1', '섞기')}${segBtn(sec, 'shuffle', '0', '차례대로')}</div></div>
+    </div>
+    ${body}
+    <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span><button class="link" data-act="mreset">${resetArmed ? `한 번 더 누르면 ${MC_NAME[sec]} 기록이 모두 지워져요` : `${MC_NAME[sec]} 기록 지우기`}</button></div>
+  </div>`;
+}
+function mPick(sec, oi) {
+  const D = mdeck[sec];
+  if (!D || D.i >= D.items.length || D.picked !== null) return;
+  const q = D.items[D.i];
+  D.picked = oi;
+  if (oi === 0) { D.right++; S.mc[sec][q.qid] = 'k'; } else { D.wrong.push(q); S.mc[sec][q.qid] = 'u'; }
+  save(); renderTop(); renderMCCheck(sec);
+}
+function mNext(sec) { const D = mdeck[sec]; if (D && D.picked !== null) { D.i++; D.picked = null; renderMCCheck(sec); window.scrollTo(0, 0); } }
+function goRef(sec, id) {
+  S[sec].mode = 'study'; S[sec].grp = 'all'; save();
+  go(SEC_VIEW[sec], () => {
+    const el = document.getElementById(sec + '-' + id);
+    if (el) { el.scrollIntoView({ block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  });
+}
+function openMC(sec, scope) {
+  S[sec].grp = 'all'; S[sec].mode = 'check'; S[sec].scope = scope; mdeck[sec] = null; save(); go(SEC_VIEW[sec]);
+}
+/* 양사·접속사·표현 전용 클릭 처리. 처리했으면 true */
+function handleMC(e, sec) {
+  const at = s => e.target.closest(s); let el;
+  if ((el = at('[data-tog]'))) { S[sec][el.dataset.tog] = !S[sec][el.dataset.tog]; save(); render(); return true; }
+  if ((el = at('.xrow'))) { el.classList.toggle('peek'); return true; }
+  if ((el = at('[data-opt]'))) {
+    const k = el.dataset.opt, v = el.dataset.val;
+    S[sec][k] = k === 'shuffle' ? v === '1' : v; mdeck[sec] = null; save(); render(); return true;
+  }
+  if ((el = at('[data-mpick]'))) { mPick(sec, +el.dataset.mpick); return true; }
+  if ((el = at('[data-act]'))) {
+    const a = el.dataset.act;
+    if (a === 'mnext') mNext(sec);
+    else if (a === 'mretry') { buildMDeck(sec, mdeck[sec].wrong); render(); window.scrollTo(0, 0); }
+    else if (a === 'mrestart') { mdeck[sec] = null; render(); window.scrollTo(0, 0); }
+    else if (a === 'mreset') {
+      if (!resetArmed) { resetArmed = true; render(); return true; }
+      S.mc[sec] = {}; mdeck[sec] = null; resetArmed = false; save(); render();
+    }
+    return true;
+  }
+  return false;
+}
+document.addEventListener('keydown', e => {
+  const sec = secOf(view);
+  if (!MCSEC.includes(sec) || S[sec].mode !== 'check') return;
+  const D = mdeck[sec]; if (!D || D.i >= D.items.length) return;
+  if (['1', '2', '3'].includes(e.key) && D.picked === null) mPick(sec, D.items[D.i].order[+e.key - 1]);
+  else if (e.key === 'Enter' && D.picked !== null) { e.preventDefault(); mNext(sec); }
+});
+
 /* ---------- render ---------- */
 function render() {
   renderTop();
   if (view === 'home') renderHome();
   else if (view === 'vocab') S.v.mode === 'study' ? renderVocabStudy() : renderVocabCheck();
   else if (view === 'grammar') S.g.mode === 'study' ? renderGrammarStudy() : renderGrammarCheck();
-  else S.s.mode === 'study' ? renderSentStudy() : renderSentCheck();
+  else if (view === 'sentence') S.s.mode === 'study' ? renderSentStudy() : renderSentCheck();
+  else if (view === 'measure') S.m.mode === 'study' ? renderMeasureStudy() : renderMCCheck('m');
+  else if (view === 'conj') S.c.mode === 'study' ? renderConjStudy() : renderMCCheck('c');
+  else S.x.mode === 'study' ? renderSituStudy() : renderMCCheck('x');
 }
 function openCard(id) {
   S.g.mode = 'study'; S.g.grp = 'all'; save();
@@ -1698,6 +2126,8 @@ document.querySelector('header.top').addEventListener('click', e => {
   if (vb) { go(vb.dataset.view); return; }
   const mb = e.target.closest('[data-mode]');
   if (mb) { S[secOf(view)].mode = mb.dataset.mode; resetArmed = false; save(); render(); window.scrollTo(0, 0); return; }
+  const xb = e.target.closest('[data-xgrp]');
+  if (xb) { const sec = secOf(view); S[sec].grp = xb.dataset.xgrp === 'all' ? 'all' : +xb.dataset.xgrp; mdeck[sec] = null; save(); render(); window.scrollTo(0, 0); return; }
   const sb = e.target.closest('[data-sgrp]');
   if (sb) { S.s.grp = sb.dataset.sgrp === 'all' ? 'all' : +sb.dataset.sgrp; sdeck = null; save(); render(); window.scrollTo(0, 0); return; }
   const tb = e.target.closest('[data-topic]');
@@ -1712,6 +2142,8 @@ main.addEventListener('click', e => {
   const t = e.target, at = s => t.closest(s);
   let el;
   if ((el = at('[data-view]'))) { go(el.dataset.view); return; }
+  if ((el = at('[data-goref]'))) { const [sc, id] = el.dataset.goref.split(':'); goRef(sc, id); return; }
+  if ((el = at('[data-mopen]'))) { const [sc, scope] = el.dataset.mopen.split(':'); openMC(sc, scope); return; }
   if ((el = at('[data-go-topic]'))) { S.v.topic = +el.dataset.goTopic; S.v.mode = 'study'; vdeck = null; save(); go('vocab'); return; }
   if ((el = at('[data-go-card]'))) { openCard(el.dataset.goCard); return; }
   if ((el = at('[data-review]'))) {
@@ -1734,6 +2166,7 @@ main.addEventListener('click', e => {
   }
   if ((el = at('[data-say]'))) { e.stopPropagation(); speak(el.dataset.say); return; }
   const sec = secOf(view);
+  if (MCSEC.includes(sec) && handleMC(e, sec)) return;
   if ((el = at('[data-tog]'))) { S[sec][el.dataset.tog] = !S[sec][el.dataset.tog]; save(); render(); return; }
   if ((el = at('.w')) || (el = at('.sc'))) { el.classList.toggle('peek'); return; }
   if ((el = at('[data-opt]'))) {
