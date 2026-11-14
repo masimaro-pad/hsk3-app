@@ -1,0 +1,1788 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HSK 3급 공부방</title>
+<meta name="description" content="HSK 3급 단어·문법·문장 배열을 공부하고 확인하는 앱">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HSK 3급">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101513" media="(prefers-color-scheme: dark)">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,sans-serif}
+img{max-width:100%}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one app, three sections (홈 / 단어 / 문법). Sticky header: brand + section tabs, then mode switch + scrolling rail. */
+:root{
+  --bg:#EEF2EF; --surface:#FFFFFF; --sunk:#F5F8F6; --ink:#18211D; --muted:#5E6B65; --line:#D3DCD7;
+  --accent:#17694F; --accent-ink:#FFFFFF; --accent-soft:#DCEBE4;
+  --bad:#B4432B; --bad-soft:#F6E1DB; --mark:#F3E3A6;
+  --font-han:"Noto Serif SC","Songti SC","STSong",serif;
+  --font-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101513; --surface:#18201C; --sunk:#141B18; --ink:#E4EBE7; --muted:#93A29B; --line:#2A3530;
+    --accent:#5CC49A; --accent-ink:#0E1A15; --accent-soft:#1C3229;
+    --bad:#E88A72; --bad-soft:#3A231D; --mark:#4A4120; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101513; --surface:#18201C; --sunk:#141B18; --ink:#E4EBE7; --muted:#93A29B; --line:#2A3530;
+  --accent:#5CC49A; --accent-ink:#0E1A15; --accent-soft:#1C3229;
+  --bad:#E88A72; --bad-soft:#3A231D; --mark:#4A4120; color-scheme:dark;
+}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input{font:inherit;color:inherit;touch-action:manipulation}
+button:focus-visible,[role="button"]:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px 10px}
+.brand{font-family:var(--font-han);font-size:22px;font-weight:700;letter-spacing:.02em;white-space:nowrap;border:0;background:none;padding:0;cursor:pointer}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex:none}
+.seg button{border:0;background:transparent;color:var(--muted);font-weight:600;font-size:14px;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg.sm button{padding:6px 11px;font-size:13px}
+.subbar{display:flex;gap:10px;align-items:center;padding-block:0 12px}
+.rail{display:flex;gap:8px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rail::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);font-size:14px;padding:7px 12px;border-radius:10px;cursor:pointer;display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.chip small{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.chip[aria-pressed="true"] small{color:var(--accent)}
+
+main{padding-block:16px 48px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.tog{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;cursor:pointer}
+.tog[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hint{color:var(--muted);font-size:13px}
+.legend{display:flex;gap:12px;color:var(--muted);font-size:12px;align-items:center;flex-wrap:wrap}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+section.grp{margin-top:20px}
+section.grp>h2{font-size:15px;font-weight:600;margin:0 0 10px;display:flex;gap:8px;align-items:baseline}
+section.grp>h2 small{color:var(--muted);font-weight:400;font-size:13px}
+
+/* home */
+.home{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:16px;font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.panel h2 small{font-size:13px;color:var(--muted);font-weight:400}
+.weekhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.weekno{font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.weekno small{font-size:15px;color:var(--muted);font-weight:500;margin-left:4px}
+.phase{color:var(--accent);font-size:14px;font-weight:600}
+.startf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.startf input{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--ink)}
+.weekbar{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.weekbar i{height:6px;border-radius:3px;background:var(--line)}
+.weekbar i.past{background:var(--accent-soft)}
+.weekbar i.now{background:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .lab{font-size:13px;color:var(--muted)}
+.stat .big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .big small{font-size:14px;color:var(--muted);font-weight:500}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.todo{display:flex;flex-direction:column}
+.todo .sub{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;padding-block:8px 2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;width:100%}
+.row:last-child{border-bottom:0}
+.row .nm{display:flex;gap:8px;align-items:baseline;min-width:0;flex-wrap:wrap}
+.row .nm .zhs{font-family:var(--font-han);font-size:17px;font-weight:700}
+.row .nm span{font-size:14px}
+.row .rt{display:flex;gap:8px;align-items:center;flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row .rt .go{color:var(--accent);font-size:16px}
+.pill{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.k{background:var(--accent-soft);color:var(--accent)}
+.pill.u{background:var(--bad-soft);color:var(--bad)}
+.review{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.rv{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.rv b{font-size:22px;font-variant-numeric:tabular-nums;color:var(--bad)}
+.rv span{font-size:13px;color:var(--muted)}
+.rv[disabled]{cursor:default;opacity:.6}
+.rv[disabled] b{color:var(--muted)}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px}
+.cat{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.cat b{font-size:15px}
+.cat span{font-size:12px;color:var(--muted)}
+.cat.on{border-color:var(--accent)}
+.cat.on span{color:var(--accent)}
+.cat.soon{background:var(--sunk);cursor:default}
+details.plan summary{cursor:pointer;font-size:14px;color:var(--accent);font-weight:500}
+.plantbl{overflow-x:auto;margin-top:10px}
+.plantbl table{border-collapse:collapse;width:100%;font-size:13px}
+.plantbl th,.plantbl td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:top}
+.plantbl th{color:var(--muted);font-weight:500;white-space:nowrap}
+.plantbl tr.now td{background:var(--accent-soft)}
+.plantbl td.zhs{font-family:var(--font-han)}
+
+/* vocab */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.w{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 12px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;cursor:pointer;min-width:0;user-select:none;-webkit-user-select:none}
+.w .h{font-family:var(--font-han);font-size:30px;line-height:1.2;font-weight:500;letter-spacing:.02em}
+.w .p{color:var(--accent);font-size:14px;font-weight:500}
+.w .m{font-size:14px;overflow-wrap:anywhere}
+.hideP .w:not(.peek) .p,.hideM .w:not(.peek) .m{color:transparent;background:var(--line);border-radius:4px}
+.dot{position:absolute;top:8px;left:8px;width:7px;height:7px;border-radius:50%;background:transparent}
+.w[data-st="k"] .dot,.legend .k{background:var(--accent)}
+.w[data-st="u"] .dot,.legend .u{background:var(--bad)}
+.say{position:absolute;top:6px;right:6px;width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.say:active{background:var(--accent-soft);color:var(--accent)}
+
+/* grammar */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:12px;align-items:start}
+.g{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;scroll-margin-top:150px}
+.g.flash{border-color:var(--accent)}
+.gh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.gh h3{margin:0;font-family:var(--font-han);font-size:24px;font-weight:700;line-height:1.2}
+.gh .sub{font-size:14px;color:var(--muted);font-weight:500}
+.gh .pill{margin-left:auto}
+.formula{background:var(--sunk);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.fl{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:14px}
+.fl .plus{color:var(--muted);font-size:12px}
+.fl .tk.zhk{font-family:var(--font-han);color:var(--accent);font-weight:700;font-size:16px}
+.desc{margin:0;font-size:14.5px}
+.ex{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ex li{display:flex;flex-direction:column;gap:1px}
+.ex .s{font-family:var(--font-han);font-size:19px;line-height:1.45}
+.ex mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.ex .py{color:var(--accent);font-size:13px}
+.ex .ko{color:var(--muted);font-size:13.5px}
+.noPy .ex .py,.noKo .ex .ko{display:none}
+.mis{border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.mis .mr{display:flex;gap:8px;align-items:baseline}
+.mis .mr b{flex:none;width:16px;text-align:center}
+.mis .wr b,.mis .wr .s{color:var(--bad)}
+.mis .wr .s{text-decoration:line-through;text-decoration-thickness:1px}
+.mis .ok b{color:var(--accent)}
+.mis .s{font-family:var(--font-han);font-size:16px}
+.mis p{margin:2px 0 0 24px;color:var(--muted);font-size:13px}
+
+/* check (shared) */
+.check{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.opts{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.opt>span{font-size:13px;color:var(--muted);font-weight:500}
+.prog{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.track{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:-8px}
+.track i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.fc{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:36px 20px 28px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none}
+.q.han{font-family:var(--font-han);font-size:clamp(56px,16vw,88px);line-height:1.1;font-weight:500}
+.q.mean{font-size:26px;font-weight:600;line-height:1.35;text-wrap:balance}
+.a{display:flex;flex-direction:column;gap:4px;align-items:center}
+.a.ph{color:var(--muted);font-size:14px}
+.ap{color:var(--accent);font-size:20px;font-weight:500}
+.am{font-size:20px;text-wrap:balance}
+.ah{font-family:var(--font-han);font-size:52px;line-height:1.15}
+.qc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 18px;display:flex;flex-direction:column;gap:16px}
+.qc .tag{font-size:12px;color:var(--muted)}
+.stem{font-size:22px;line-height:1.5;margin:0;text-wrap:balance}
+.zhs{font-family:var(--font-han)}
+.blank{display:inline-block;min-width:2.4em;border-bottom:2px solid var(--ink);text-align:center;font-family:var(--font-han);margin:0 2px}
+.blank.fill{color:var(--accent);border-color:var(--accent)}
+.choices{display:flex;flex-direction:column;gap:8px}
+.ch{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;cursor:pointer;min-height:52px}
+.ch .n{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);color:var(--muted);font-size:12px;font-weight:600}
+.ch .t{font-family:var(--font-han);font-size:18px}
+.ch.ok{border-color:var(--accent);background:var(--accent-soft)}
+.ch.ok .n{background:var(--accent);color:var(--accent-ink)}
+.ch.no{border-color:var(--bad);background:var(--bad-soft)}
+.ch.no .n{background:var(--bad);color:var(--surface)}
+.ch[disabled]{cursor:default}
+.expl{background:var(--sunk);border-radius:10px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.expl b.k{color:var(--accent)} .expl b.u{color:var(--bad)}
+.lnk{border:0;background:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0;text-decoration:underline;align-self:flex-start}
+.acts{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px}
+.btn{height:54px;border-radius:14px;border:1px solid transparent;font-size:16px;font-weight:600;cursor:pointer;width:100%}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.good{background:var(--accent);color:var(--accent-ink)}
+.btn.bad{background:var(--bad-soft);color:var(--bad)}
+.keys{color:var(--muted);font-size:12px;text-align:center}
+.done{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 20px;display:flex;flex-direction:column;gap:14px}
+.done h2{margin:0;font-size:20px}
+.score{margin:0;font-size:16px}
+.score b{font-size:24px;font-variant-numeric:tabular-nums}
+.score .sk{color:var(--accent)} .score .su{color:var(--bad)}
+.vmiss{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.vmiss div{display:flex;gap:10px;align-items:baseline;padding-block:8px;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.vmiss b{font-family:var(--font-han);font-size:20px;font-weight:500}
+.vmiss span{color:var(--accent)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px 20px;text-align:center;color:var(--muted)}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+.link{border:0;background:none;color:var(--bad);font-size:12px;cursor:pointer;padding:0;text-decoration:underline}
+/* sentence ordering */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:10px}
+.sc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;min-width:0;user-select:none;-webkit-user-select:none}
+.sc .tiles{display:flex;flex-wrap:wrap;gap:6px}
+.sc .tiles span{font-family:var(--font-han);font-size:15px;border:1px solid var(--line);border-radius:8px;padding:2px 8px;background:var(--sunk)}
+.sc .ans{font-family:var(--font-han);font-size:19px;line-height:1.4;align-self:flex-start}
+.sc .ko{font-size:13.5px;color:var(--muted)}
+.hideA .sc:not(.peek) .ans{color:transparent;background:var(--line);border-radius:4px}
+.sc .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hintko{margin:0;font-size:17px;font-weight:500;text-wrap:balance}
+.slots{min-height:66px;border:2px dashed var(--line);border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.slots .ph{color:var(--muted);font-size:13px;padding:0 6px}
+.slots.ok{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.slots.no{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tile{font-family:var(--font-han);font-size:19px;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:8px 13px;min-height:46px;cursor:pointer}
+.tile.in{background:var(--surface);border-color:var(--accent)}
+.tile.used{visibility:hidden}
+.tile[disabled]{cursor:default}
+.pn{font-family:var(--font-han);font-size:20px}
+.expl .zhs{font-size:17px}
+.expl .mine{color:var(--bad);text-decoration:line-through;text-decoration-thickness:1px}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn[disabled]{opacity:.45;cursor:default}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <button class="brand" data-view="home">HSK 3级</button>
+      <div class="seg" id="views" role="group" aria-label="카테고리">
+        <button data-view="home">홈</button>
+        <button data-view="vocab">단어</button>
+        <button data-view="grammar">문법</button>
+        <button data-view="sentence">배열</button>
+      </div>
+    </div>
+    <div class="subbar" id="subbar">
+      <div class="seg sm" id="modes" role="group" aria-label="모드">
+        <button data-mode="study">공부</button>
+        <button data-mode="check">확인</button>
+      </div>
+      <nav class="rail" id="rail" aria-label="분류"></nav>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="main"></main>
+
+<script>
+const RAW = `
+#가족·사람
+人|rén|사람
+爷爷|yéye|할아버지
+奶奶|nǎinai|할머니
+爸爸|bàba|아빠
+妈妈|māma|엄마
+姐姐|jiějie|누나, 언니
+哥哥|gēge|형, 오빠
+妹妹|mèimei|여동생
+弟弟|dìdi|남동생
+叔叔|shūshu|삼촌, 아저씨
+阿姨|āyí|이모, 아주머니
+孩子|háizi|아이
+儿子|érzi|아들
+女儿|nǚ'ér|딸
+男|nán|남자
+女|nǚ|여자
+妻子|qīzi|아내
+丈夫|zhàngfu|남편
+姓|xìng|성, 성이 ~이다
+名字|míngzi|이름
+小姐|xiǎojiě|아가씨, ~양
+我|wǒ|나
+我们|wǒmen|우리
+你|nǐ|너, 당신
+您|nín|당신(존칭)
+他|tā|그
+她|tā|그녀
+谁|shéi|누구
+大家|dàjiā|모두, 여러분
+自己|zìjǐ|자기, 스스로
+别人|biérén|다른 사람
+客人|kèrén|손님
+#감정
+爱|ài|사랑하다
+高兴|gāoxìng|기쁘다
+快乐|kuàilè|즐겁다
+难过|nánguò|슬프다, 괴롭다
+放心|fàngxīn|안심하다
+满意|mǎnyì|만족하다
+笑|xiào|웃다
+哭|kū|울다
+着急|zháojí|조급해하다
+关心|guānxīn|관심을 갖다
+担心|dānxīn|걱정하다
+害怕|hàipà|무서워하다
+生气|shēngqì|화내다
+#행동·태도
+看|kàn|보다
+看见|kànjiàn|보이다, 보다
+走|zǒu|걷다, 떠나다
+做|zuò|하다, 만들다
+开|kāi|열다, 켜다, 운전하다
+关|guān|닫다, 끄다
+找|zhǎo|찾다
+喜欢|xǐhuan|좋아하다
+说话|shuōhuà|말하다
+送|sòng|선물하다, 배웅하다
+打电话|dǎ diànhuà|전화하다
+帮忙|bāngmáng|일을 돕다
+见面|jiànmiàn|만나다
+结婚|jiéhūn|결혼하다
+对不起|duìbuqǐ|미안합니다
+谢谢|xièxie|감사합니다
+不客气|bú kèqi|천만에요
+没关系|méi guānxi|괜찮아요
+再见|zàijiàn|또 만나요, 안녕
+相信|xiāngxìn|믿다
+照顾|zhàogù|돌보다
+希望|xīwàng|희망하다, 바라다
+#사교·관계
+礼物|lǐwù|선물
+关系|guānxì|관계
+节日|jiérì|명절, 기념일
+生日|shēngrì|생일
+邻居|línjū|이웃
+先生|xiānsheng|선생, ~씨(남성)
+#신체·외모
+身体|shēntǐ|몸, 건강
+脸|liǎn|얼굴
+眼睛|yǎnjing|눈
+鼻子|bízi|코
+耳朵|ěrduo|귀
+嘴|zuǐ|입
+脚|jiǎo|발
+头发|tóufa|머리카락
+腿|tuǐ|다리
+瘦|shòu|마르다
+可爱|kě'ài|귀엽다
+漂亮|piàoliang|예쁘다
+胖|pàng|뚱뚱하다
+年轻|niánqīng|젊다
+老|lǎo|늙다, 오래되다
+长|zhǎng|자라다, 생기다
+个子|gèzi|키
+高|gāo|높다, (키가) 크다
+矮|ǎi|(키가) 작다
+#건강·의료
+健康|jiànkāng|건강하다
+发烧|fāshāo|열이 나다
+感冒|gǎnmào|감기에 걸리다
+疼|téng|아프다
+生病|shēngbìng|병이 나다
+药|yào|약
+医生|yīshēng|의사
+医院|yīyuàn|병원
+舒服|shūfu|편안하다
+休息|xiūxi|쉬다
+#운동·취미·여행
+比赛|bǐsài|경기, 시합
+打篮球|dǎ lánqiú|농구하다
+踢足球|tī zúqiú|축구하다
+体育|tǐyù|체육
+锻炼|duànliàn|단련하다, 운동하다
+游泳|yóuyǒng|수영하다
+运动|yùndòng|운동하다
+爱好|àihào|취미
+唱歌|chànggē|노래하다
+跳舞|tiàowǔ|춤추다
+爬山|páshān|등산하다
+跑步|pǎobù|달리다
+游戏|yóuxì|게임, 놀이
+旅游|lǚyóu|여행하다
+地图|dìtú|지도
+票|piào|표
+护照|hùzhào|여권
+照片|zhàopiàn|사진
+照相机|zhàoxiàngjī|카메라
+玩儿|wánr|놀다
+感兴趣|gǎn xìngqù|흥미가 있다
+行李箱|xínglixiāng|여행 가방
+画|huà|그리다, 그림
+#계절·날씨
+季节|jìjié|계절
+春|chūn|봄
+夏|xià|여름
+秋|qiū|가을
+冬|dōng|겨울
+天气|tiānqì|날씨
+冷|lěng|춥다
+热|rè|덥다
+晴|qíng|맑다
+阴|yīn|흐리다
+下雨|xià yǔ|비가 오다
+刮风|guā fēng|바람이 불다
+雪|xuě|눈
+太阳|tàiyáng|태양, 해
+月亮|yuèliang|달
+#동식물
+动物|dòngwù|동물
+狗|gǒu|개
+猫|māo|고양이
+马|mǎ|말
+熊猫|xióngmāo|판다
+鸟|niǎo|새
+鱼|yú|물고기
+草|cǎo|풀
+花|huā|꽃
+树|shù|나무
+只|zhī|마리 (동물 양사)
+#일상생활
+住|zhù|살다, 묵다
+搬|bān|옮기다, 이사하다
+起床|qǐchuáng|일어나다
+睡觉|shuìjiào|자다
+刷牙|shuāyá|이를 닦다
+洗|xǐ|씻다, 빨다
+洗澡|xǐzǎo|샤워하다
+欢迎|huānyíng|환영하다
+服务员|fúwùyuán|종업원
+东西|dōngxi|물건
+买|mǎi|사다
+卖|mài|팔다
+便宜|piányi|싸다
+贵|guì|비싸다
+钱|qián|돈
+块|kuài|위안(구어), 덩어리
+元|yuán|위안
+角|jiǎo|자오(0.1위안)
+好|hǎo|좋다
+坏|huài|나쁘다, 고장 나다
+忙|máng|바쁘다
+累|lèi|피곤하다
+安静|ānjìng|조용하다
+方便|fāngbiàn|편리하다
+干净|gānjìng|깨끗하다
+热情|rèqíng|친절하다, 열정적이다
+近|jìn|가깝다
+远|yuǎn|멀다
+快|kuài|빠르다
+慢|màn|느리다
+帮助|bāngzhù|돕다, 도움
+习惯|xíguàn|습관, 익숙해지다
+#식생활
+菜|cài|요리, 채소
+菜单|càidān|메뉴
+米|mǐ|쌀, 미터
+米饭|mǐfàn|쌀밥
+面包|miànbāo|빵
+面条|miàntiáo|국수
+水果|shuǐguǒ|과일
+苹果|píngguǒ|사과
+葡萄|pútao|포도
+西瓜|xīguā|수박
+香蕉|xiāngjiāo|바나나
+饮料|yǐnliào|음료
+茶|chá|차
+咖啡|kāfēi|커피
+牛奶|niúnǎi|우유
+水|shuǐ|물
+啤酒|píjiǔ|맥주
+糖|táng|설탕, 사탕
+羊肉|yángròu|양고기
+鸡蛋|jīdàn|달걀
+蛋糕|dàngāo|케이크
+杯子|bēizi|컵
+冰箱|bīngxiāng|냉장고
+筷子|kuàizi|젓가락
+盘子|pánzi|접시
+碗|wǎn|그릇, 공기
+饿|è|배고프다
+渴|kě|목마르다
+吃|chī|먹다
+喝|hē|마시다
+好吃|hǎochī|맛있다
+甜|tián|달다
+饱|bǎo|배부르다
+新鲜|xīnxiān|신선하다
+#의생활
+衣服|yīfu|옷
+衬衫|chènshān|셔츠
+裤子|kùzi|바지
+裙子|qúnzi|치마
+皮鞋|píxié|구두
+帽子|màozi|모자
+包|bāo|가방
+手表|shǒubiǎo|손목시계
+穿|chuān|입다, 신다
+件|jiàn|벌, 건 (옷·일 양사)
+#교통·운송
+公共汽车|gōnggòng qìchē|버스
+地铁|dìtiě|지하철
+出租车|chūzūchē|택시
+自行车|zìxíngchē|자전거
+船|chuán|배
+飞机|fēijī|비행기
+火车站|huǒchēzhàn|기차역
+机场|jīchǎng|공항
+司机|sījī|운전기사
+路|lù|길
+街道|jiēdào|거리
+骑|qí|(자전거·말을) 타다
+坐|zuò|앉다, (차를) 타다
+辆|liàng|대 (차량 양사)
+#전자·컴퓨터
+电脑|diànnǎo|컴퓨터
+电视|diànshì|텔레비전
+电梯|diàntī|엘리베이터
+电影|diànyǐng|영화
+上网|shàngwǎng|인터넷을 하다
+电子邮件|diànzǐ yóujiàn|이메일
+手机|shǒujī|휴대폰
+空调|kōngtiáo|에어컨
+#색깔
+颜色|yánsè|색깔
+红|hóng|빨갛다
+绿|lǜ|초록색이다
+蓝|lán|파랗다
+白|bái|하얗다
+黑|hēi|까맣다
+#비즈니스·의사표현
+公司|gōngsī|회사
+办公室|bàngōngshì|사무실
+同事|tóngshì|동료
+经理|jīnglǐ|매니저, 사장
+上班|shàngbān|출근하다
+工作|gōngzuò|일, 일하다
+完|wán|끝나다, 다하다
+完成|wánchéng|완성하다
+会议|huìyì|회의
+报纸|bàozhǐ|신문
+新闻|xīnwén|뉴스
+事情|shìqing|일, 사건
+节目|jiémù|프로그램
+机会|jīhuì|기회
+参加|cānjiā|참가하다
+同意|tóngyì|동의하다
+发|fā|보내다, 발생하다
+决定|juédìng|결정하다
+觉得|juéde|~라고 느끼다
+认为|rènwéi|~라고 여기다
+聊天|liáotiān|잡담하다
+意思|yìsi|의미, 뜻
+解决|jiějué|해결하다
+说|shuō|말하다
+#학교생활·교육
+字|zì|글자
+句子|jùzi|문장
+书|shū|책
+词典|cídiǎn|사전
+笔记本|bǐjìběn|공책, 노트북
+铅笔|qiānbǐ|연필
+黑板|hēibǎn|칠판
+桌子|zhuōzi|탁자, 책상
+椅子|yǐzi|의자
+学校|xuéxiào|학교
+教室|jiàoshì|교실
+图书馆|túshūguǎn|도서관
+同学|tóngxué|학우, 반 친구
+学生|xuésheng|학생
+校长|xiàozhǎng|교장
+老师|lǎoshī|선생님
+朋友|péngyou|친구
+中文|Zhōngwén|중국어
+汉语|Hànyǔ|중국어
+音乐|yīnyuè|음악
+数学|shùxué|수학
+历史|lìshǐ|역사
+作业|zuòyè|숙제
+课|kè|수업, 과
+题|tí|문제
+问题|wèntí|문제, 질문
+年级|niánjí|학년
+班|bān|반
+成绩|chéngjì|성적
+水平|shuǐpíng|수준
+读|dú|읽다
+写|xiě|쓰다
+练习|liànxí|연습하다
+教|jiāo|가르치다
+学习|xuéxí|공부하다
+复习|fùxí|복습하다
+回答|huídá|대답하다
+懂|dǒng|이해하다
+问|wèn|묻다
+了解|liǎojiě|이해하다, 알다
+努力|nǔlì|노력하다
+认真|rènzhēn|성실하다, 진지하다
+清楚|qīngchu|분명하다
+明白|míngbai|이해하다, 명백하다
+考试|kǎoshì|시험, 시험을 보다
+容易|róngyì|쉽다
+难|nán|어렵다
+错|cuò|틀리다
+对|duì|맞다
+讲|jiǎng|말하다, 설명하다
+迟到|chídào|지각하다
+提高|tígāo|향상시키다
+聪明|cōngming|똑똑하다
+#시간
+时候|shíhou|때
+上午|shàngwǔ|오전
+中午|zhōngwǔ|정오, 점심때
+下午|xiàwǔ|오후
+早上|zǎoshang|아침
+晚上|wǎnshang|저녁, 밤
+昨天|zuótiān|어제
+今天|jīntiān|오늘
+明天|míngtiān|내일
+去年|qùnián|작년
+现在|xiànzài|지금
+以前|yǐqián|이전
+以后|yǐhòu|이후
+星期|xīngqī|요일, 주
+周末|zhōumò|주말
+点|diǎn|시(시각)
+分|fēn|분
+分钟|fēnzhōng|분 (동안)
+时间|shíjiān|시간
+小时|xiǎoshí|시간 (동안)
+年|nián|해, 년
+月|yuè|달, 월
+日|rì|일, 날
+号|hào|일(날짜), 번호
+刚才|gāngcái|방금
+一会儿|yíhuìr|잠시
+后来|hòulái|그 후
+最近|zuìjìn|최근
+#장소·방향
+世界|shìjiè|세계
+地方|dìfang|곳, 장소
+城市|chéngshì|도시
+国家|guójiā|국가
+中国|Zhōngguó|중국
+北京|Běijīng|베이징
+黄河|Huáng Hé|황허강
+宾馆|bīnguǎn|호텔
+饭店|fàndiàn|호텔, 식당
+公园|gōngyuán|공원
+商店|shāngdiàn|상점
+超市|chāoshì|슈퍼마켓
+银行|yínháng|은행
+房间|fángjiān|방
+洗手间|xǐshǒujiān|화장실
+东|dōng|동쪽
+西|xī|서쪽
+南|nán|남쪽
+北方|běifāng|북쪽, 북방
+来|lái|오다
+去|qù|가다
+出|chū|나가다
+进|jìn|들어가다
+里|lǐ|안
+外|wài|밖
+上|shàng|위, 오르다
+下|xià|아래, 내리다
+中间|zhōngjiān|가운데
+前面|qiánmiàn|앞
+后面|hòumiàn|뒤
+左边|zuǒbian|왼쪽
+旁边|pángbiān|옆
+附近|fùjìn|근처
+过去|guòqù|지나가다, 과거
+回|huí|돌아가다
+#명사
+办法|bànfǎ|방법
+变化|biànhuà|변화
+灯|dēng|등, 불
+故事|gùshi|이야기
+环境|huánjìng|환경
+家|jiā|집
+楼|lóu|건물, 층
+门|mén|문
+瓶子|píngzi|병
+伞|sǎn|우산
+声音|shēngyīn|소리
+文化|wénhuà|문화
+信用卡|xìnyòngkǎ|신용카드
+#대명사
+多少|duōshao|얼마, 몇
+其他|qítā|기타, 그 밖의
+什么|shénme|무엇
+它|tā|그것
+为什么|wèishénme|왜
+怎么|zěnme|어떻게
+怎么样|zěnmeyàng|어떻다, 어때요
+这|zhè|이, 이것
+那|nà|그, 저것
+哪|nǎ|어느
+哪儿|nǎr|어디
+#동사
+包|bāo|싸다, 포장하다
+差|chà|부족하다, 모자라다
+带|dài|가지다, 데리다
+到|dào|도착하다
+打扫|dǎsǎo|청소하다
+打算|dǎsuàn|~할 계획이다
+等|děng|기다리다
+放|fàng|놓다, 넣다
+发现|fāxiàn|발견하다
+告诉|gàosu|알려 주다
+给|gěi|주다
+过|guò|지나다, 보내다
+还|huán|돌려주다
+换|huàn|바꾸다
+经过|jīngguò|지나다, 거치다
+检查|jiǎnchá|검사하다
+叫|jiào|부르다, ~라고 하다
+接|jiē|마중하다, 받다
+记得|jìde|기억하다
+结束|jiéshù|끝나다
+借|jiè|빌리다
+介绍|jièshào|소개하다
+开始|kāishǐ|시작하다
+离开|líkāi|떠나다
+留学|liúxué|유학하다
+没有|méiyǒu|없다
+拿|ná|잡다, 가지다
+起飞|qǐfēi|이륙하다
+起来|qǐlái|일어나다
+请|qǐng|청하다, 한턱내다
+请假|qǐngjià|휴가를 신청하다
+让|ràng|~하게 하다
+认识|rènshi|(사람을) 알다
+是|shì|~이다
+试|shì|시도하다
+忘记|wàngjì|잊다
+想|xiǎng|생각하다, 그리워하다
+像|xiàng|닮다, ~같다
+小心|xiǎoxīn|조심하다
+需要|xūyào|필요하다
+选择|xuǎnzé|선택하다
+要求|yāoqiú|요구하다
+影响|yǐngxiǎng|영향을 주다
+用|yòng|사용하다
+有|yǒu|있다
+愿意|yuànyì|원하다, 바라다
+遇到|yùdào|마주치다
+在|zài|~에 있다
+站|zhàn|서다, 역
+知道|zhīdào|알다
+注意|zhùyì|주의하다
+准备|zhǔnbèi|준비하다
+#조동사
+会|huì|~할 줄 알다, ~할 것이다
+可以|kěyǐ|~해도 된다
+能|néng|~할 수 있다
+想|xiǎng|~하고 싶다
+要|yào|~하려고 하다, ~해야 한다
+应该|yīnggāi|마땅히 ~해야 한다
+#형용사
+长|cháng|길다
+短|duǎn|짧다
+大|dà|크다
+小|xiǎo|작다
+多|duō|많다
+少|shǎo|적다
+旧|jiù|낡다
+简单|jiǎndān|간단하다
+久|jiǔ|오래다
+奇怪|qíguài|이상하다
+新|xīn|새롭다
+一般|yìbān|보통이다
+一样|yíyàng|같다
+有名|yǒumíng|유명하다
+重要|zhòngyào|중요하다
+主要|zhǔyào|주요하다
+最后|zuìhòu|최후, 마지막
+#부사
+比较|bǐjiào|비교적
+必须|bìxū|반드시 ~해야 한다
+别|bié|~하지 마라
+不|bù|~않다, 아니다
+才|cái|비로소, 겨우
+当然|dāngrán|당연히
+都|dōu|모두
+多么|duōme|얼마나
+非常|fēicháng|매우
+更|gèng|더욱
+还|hái|아직, 또
+还是|háishi|여전히, 아니면
+很|hěn|매우
+几乎|jīhū|거의
+极|jí|극히
+经常|jīngcháng|자주
+就|jiù|곧, 바로
+可能|kěnéng|아마도
+马上|mǎshàng|곧, 즉시
+没|méi|~않았다
+每|měi|매, ~마다
+其实|qíshí|사실은
+太|tài|너무
+特别|tèbié|특히
+突然|tūrán|갑자기
+先|xiān|먼저
+又|yòu|또
+一边|yìbiān|~하면서
+一起|yìqǐ|함께
+一直|yìzhí|줄곧, 계속
+一定|yídìng|반드시
+一共|yígòng|모두 합해서
+也|yě|~도
+已经|yǐjīng|이미
+越|yuè|~할수록
+再|zài|다시
+真|zhēn|정말
+正在|zhèngzài|~하는 중이다
+只|zhǐ|단지, 오직
+终于|zhōngyú|마침내
+总是|zǒngshì|늘, 항상
+最|zuì|가장
+#개사
+把|bǎ|~을(를)
+被|bèi|~에 의해 (당하다)
+比|bǐ|~보다
+除了|chúle|~을 제외하고
+从|cóng|~부터
+给|gěi|~에게
+跟|gēn|~와(과)
+关于|guānyú|~에 관하여
+根据|gēnjù|~에 근거하여
+和|hé|~와(과)
+离|lí|~로부터 (거리)
+往|wǎng|~쪽으로
+为|wèi|~을 위하여
+为了|wèile|~하기 위하여
+向|xiàng|~을 향하여
+#수사
+零|líng|0, 영
+一|yī|1, 하나
+二|èr|2, 둘
+三|sān|3, 셋
+四|sì|4, 넷
+五|wǔ|5, 다섯
+六|liù|6, 여섯
+七|qī|7, 일곱
+八|bā|8, 여덟
+九|jiǔ|9, 아홉
+十|shí|10, 열
+百|bǎi|100, 백
+千|qiān|1000, 천
+万|wàn|10000, 만
+半|bàn|반, 절반
+第一|dì-yī|첫 번째
+几|jǐ|몇
+`;
+
+const GROUPS = ['시제·상태', '보어', '특수 구문', '부사 구문', '접속사', '구별·기타'];
+const CARDS = [
+{ id:'le', g:0, t:'了', s:'완료·변화',
+  f:'동사 + 了 (완료) / 문장 끝 + 了 (변화)',
+  d:'동사 뒤 了는 동작이 끝났음을, 문장 끝 了는 새로운 상황이 됐음을 나타내요. 부정할 때는 没(有)를 쓰고 了는 빼요.',
+  k:['了','没'],
+  ex:[['我买了一本书。','Wǒ mǎi le yì běn shū.','나는 책을 한 권 샀다.'],
+      ['天冷了。','Tiān lěng le.','날씨가 추워졌다.']],
+  x:['我没吃了饭。','我没吃饭。','没로 부정하면 了를 쓰지 않아요.'],
+  q:[['昨天我没（ ）他。',['看见','看见了','看见过了'],'没로 부정한 문장에는 了를 붙이지 않아요.'],
+     ['"비가 그쳤다"를 바르게 쓴 것은?',['雨停了。','雨了停。','雨停过。'],'변화(그쳤다)는 문장 끝 了로 나타내요.']] },
+{ id:'guo', g:0, t:'过', s:'경험',
+  f:'동사 + 过 (~한 적 있다) / 没 + 동사 + 过 (~한 적 없다)',
+  d:'과거의 경험을 말해요. 부정할 때는 不가 아니라 没를 쓰고, 过는 그대로 남아요.',
+  k:['过','没'],
+  ex:[['我去过北京。','Wǒ qù guo Běijīng.','나는 베이징에 가 본 적이 있다.'],
+      ['他没吃过羊肉。','Tā méi chī guo yángròu.','그는 양고기를 먹어 본 적이 없다.']],
+  x:['我不去过中国。','我没去过中国。','경험의 부정은 没예요.'],
+  q:[['你看（ ）这个电影吗？',['过','着','在'],'"본 적 있니?"라는 경험을 물으니 过예요.'],
+     ['"나는 판다를 본 적이 없다"를 바르게 쓴 것은?',['我没看过熊猫。','我不看过熊猫。','我没看熊猫过。'],'没 + 동사 + 过 + 목적어 순서예요.']] },
+{ id:'zhe', g:0, t:'着', s:'지속',
+  f:'동사 + 着 (~해 있다) / 동사1 + 着 + 동사2 (~한 채로 ~하다)',
+  d:'동작이나 상태가 계속 유지되는 것을 나타내요. 着는 동사 바로 뒤에 붙어요.',
+  k:['着'],
+  ex:[['门开着。','Mén kāi zhe.','문이 열려 있다.'],
+      ['他笑着说："没关系。"','Tā xiào zhe shuō: "Méi guānxi."','그는 웃으며 "괜찮아"라고 말했다.']],
+  x:['他着坐看书。','他坐着看书。','着는 동사 앞이 아니라 뒤에 와요.'],
+  q:[['桌子上放（ ）一本书。',['着','过','得'],'책이 놓여 있는 상태가 계속되니 着예요.'],
+     ['"아이가 울면서 엄마를 찾는다"를 바르게 쓴 것은?',['孩子哭着找妈妈。','孩子着哭找妈妈。','孩子哭过找妈妈。'],'동사1 + 着 + 동사2: ~한 채로 ~하다.']] },
+{ id:'zhengzai', g:0, t:'正在…呢', s:'진행',
+  f:'주어 + 正在 / 在 / 正 + 동사 + (呢)',
+  d:'지금 진행 중인 동작을 말해요. 문장 끝에는 了가 아니라 呢를 붙여요.',
+  k:['正在','在','呢'],
+  ex:[['我正在吃饭呢。','Wǒ zhèngzài chī fàn ne.','나는 밥을 먹고 있는 중이야.'],
+      ['你给我打电话的时候，我在洗澡。','Nǐ gěi wǒ dǎ diànhuà de shíhou, wǒ zài xǐzǎo.','네가 전화했을 때 나는 샤워하고 있었어.']],
+  x:['我正在吃饭了。','我正在吃饭呢。','진행형 끝에는 呢를 써요.'],
+  q:[['别说话，弟弟（ ）睡觉呢。',['正在','已经','刚才'],'끝에 呢가 있고 "지금 자는 중"이니 正在예요.'],
+     ['他们在开会（ ）。',['呢','了','过'],'在 + 동사 진행형 끝에는 呢가 어울려요.']] },
+{ id:'yaole', g:0, t:'快要…了', s:'임박',
+  f:'快要 / 快 / 就要 + 동사 + 了',
+  d:'곧 ~하려고 한다는 뜻이에요. 구체적인 시간이 앞에 있으면 快要가 아니라 就要를 써요.',
+  k:['快要','就要','了'],
+  ex:[['快要下雨了。','Kuài yào xià yǔ le.','곧 비가 오려고 한다.'],
+      ['飞机十点就要起飞了。','Fēijī shí diǎn jiù yào qǐfēi le.','비행기가 10시면 이륙한다.']],
+  x:['明天快要考试了。','明天就要考试了。','시간(明天)이 있으면 就要예요.'],
+  q:[['火车（ ）开了，快上车吧！',['快要','已经','刚才'],'곧 출발하려는 상황이니 快要…了예요.'],
+     ['下个星期我们（ ）结婚了。',['就要','快要','正在'],'"다음 주"라는 시간이 있으니 就要예요.']] },
+
+{ id:'jieguo', g:1, t:'결과보어', s:'完 · 好 · 到 · 懂 · 见 · 错',
+  f:'동사 + 결과보어 (+ 了) / 没 + 동사 + 결과보어',
+  d:'동작의 결과를 동사 바로 뒤에 붙여요. 写完(다 쓰다), 听懂(알아듣다), 找到(찾아내다). 부정은 没를 써요.',
+  k:['完','懂','到','错','见'],
+  ex:[['我写完作业了。','Wǒ xiě wán zuòyè le.','나는 숙제를 다 했다.'],
+      ['你说的话我听懂了。','Nǐ shuō de huà wǒ tīng dǒng le.','네가 한 말을 알아들었어.']],
+  x:['我不找到我的手机。','我没找到我的手机。','결과보어의 부정은 没예요.'],
+  q:[['对不起，我写（ ）了，这个字是"再"。',['错','完','懂'],'잘못 썼다 → 写错.'],
+     ['我找了半天，终于找（ ）了我的护照。',['到','懂','错'],'찾아냈다 → 找到.']] },
+{ id:'fangxiang', g:1, t:'방향보어', s:'来 · 去',
+  f:'동사 + 来 / 去 / 동사 + 上·下·进·出·回·过·起 + 来 / 去',
+  d:'来는 말하는 사람 쪽으로, 去는 말하는 사람에게서 멀어지는 방향이에요. 장소 목적어는 来/去 앞에 넣어요.',
+  k:['进','来','去','过'],
+  ex:[['他跑进教室来了。','Tā pǎo jìn jiàoshì lái le.','그가 교실로 뛰어 들어왔다.'],
+      ['请把书拿过来。','Qǐng bǎ shū ná guòlai.','책을 가져와 주세요.']],
+  x:['他回去家了。','他回家去了。','장소(家)는 来/去 앞에 와요.'],
+  q:[['外面下雨了，快进（ ）吧！ (말하는 사람은 안에 있어요)',['来','去','过'],'말하는 사람 쪽으로 들어오니 来예요.'],
+     ['"그는 집으로 돌아갔다"를 바르게 쓴 것은?',['他回家去了。','他回去家了。','他去回家了。'],'동사 + 장소 + 去 순서예요.']] },
+{ id:'keneng', g:1, t:'가능보어', s:'得 / 不',
+  f:'동사 + 得 + 보어 (할 수 있다) / 동사 + 不 + 보어 (할 수 없다)',
+  d:'결과를 이룰 수 있는지 없는지를 나타내요. 听得懂(알아들을 수 있다), 看不清楚(잘 안 보인다).',
+  k:['不懂','得完','得','不'],
+  ex:[['老师说得太快，我听不懂。','Lǎoshī shuō de tài kuài, wǒ tīng bu dǒng.','선생님이 너무 빨리 말해서 못 알아듣겠다.'],
+      ['这么多菜，我们吃得完吗？','Zhème duō cài, wǒmen chī de wán ma?','이렇게 많은 요리를 우리가 다 먹을 수 있을까?']],
+  x:['我不能听懂。','我听不懂。','"알아들을 수 없다"는 가능보어로 말해요.'],
+  q:[['黑板上的字太小了，我看不（ ）。',['清楚','完','得'],'잘 안 보인다 → 看不清楚.'],
+     ['你听（ ）懂中文吗？',['得','的','地'],'가능보어 긍정형은 동사 + 得 + 보어예요.']] },
+{ id:'chengdu', g:1, t:'정도보어', s:'동사 + 得',
+  f:'동사 + 得 + (很) 형용사 / 동사 + 목적어 + 동사 + 得 + 형용사',
+  d:'동작이 어느 정도인지 평가해요. 목적어가 있으면 동사를 한 번 더 써요.',
+  k:['得'],
+  ex:[['他跑得很快。','Tā pǎo de hěn kuài.','그는 빨리 달린다.'],
+      ['她唱歌唱得非常好。','Tā chàng gē chàng de fēicháng hǎo.','그녀는 노래를 아주 잘 부른다.']],
+  x:['他说汉语得很好。','他说汉语说得很好。','목적어 뒤에 동사를 한 번 더 써요.'],
+  q:[['你今天来（ ）很早。',['得','的','地'],'동사(来) 뒤에서 정도를 말하니 得예요.'],
+     ['바른 문장은?',['她写字写得很漂亮。','她写字得很漂亮。','她写得字很漂亮。'],'동사 + 목적어 + 동사 + 得 + 형용사.']] },
+{ id:'shiliang', g:1, t:'시량보어', s:'얼마 동안',
+  f:'동사 + (了) + 시간 + 목적어 / 동사 + 목적어 + 동사 + (了) + 시간',
+  d:'동작을 얼마 동안 했는지 말해요. 시간은 동사 뒤에 와요. 한국어 어순과 반대라서 자주 틀려요.',
+  k:['两年','一个小时'],
+  ex:[['我学了两年汉语。','Wǒ xué le liǎng nián Hànyǔ.','나는 중국어를 2년 배웠다.'],
+      ['他等你等了一个小时。','Tā děng nǐ děng le yí ge xiǎoshí.','그는 너를 한 시간 기다렸다.']],
+  x:['我两个小时睡觉了。','我睡了两个小时。','시간은 동사 뒤에 와요.'],
+  q:[['바른 문장은?',['我每天锻炼一个小时。','我每天一个小时锻炼。','我一个小时每天锻炼。'],'시간(一个小时)은 동사 뒤에 와요.'],
+     ['他在北京住（ ）三年。',['了','着','得'],'동사 + 了 + 기간: ~동안 ~했다.']] },
+
+{ id:'ba', g:2, t:'把자문', s:'목적어 처리',
+  f:'주어 + (没/不/조동사) + 把 + 목적어 + 동사 + 기타성분',
+  d:'목적어를 어떻게 처리했는지 강조해요. 동사 혼자 끝나면 안 되고 뒤에 了, 보어 같은 것이 붙어야 해요. 没, 不, 조동사는 把 앞에 와요.',
+  k:['把'],
+  ex:[['我把作业写完了。','Wǒ bǎ zuòyè xiě wán le.','나는 숙제를 다 했다.'],
+      ['请把门关上。','Qǐng bǎ mén guānshang.','문을 닫아 주세요.']],
+  x:['我把作业没写完。','我没把作业写完。','부정사(没)는 把 앞에 와요.'],
+  q:[['바른 문장은?',['他没把钱给我。','他把钱没给我。','他把钱给没我。'],'没는 把 앞에 와요.'],
+     ['你（ ）这些东西放在桌子上吧。',['把','被','比'],'"이 물건들을 ~에 놓다" → 把자문.']] },
+{ id:'bei', g:2, t:'被자문', s:'피동',
+  f:'주어(당하는 쪽) + 被 + 행위자 + 동사 + 기타성분',
+  d:'~에게 ~당했다는 뜻이에요. 주로 안 좋은 일에 많이 써요. 把자문처럼 동사 뒤에 了나 보어가 붙어요.',
+  k:['被'],
+  ex:[['我的自行车被朋友骑走了。','Wǒ de zìxíngchē bèi péngyou qí zǒu le.','내 자전거는 친구가 타고 가 버렸다.'],
+      ['蛋糕被弟弟吃完了。','Dàngāo bèi dìdi chī wán le.','케이크는 남동생이 다 먹어 버렸다.']],
+  x:['我的手机被他拿。','我的手机被他拿走了。','동사 뒤에 결과(走了)가 필요해요.'],
+  q:[['我的伞（ ）别人拿走了。',['被','把','比'],'우산이 남에게 가져가짐을 당했다 → 被.'],
+     ['바른 문장은?',['面包被我吃完了。','我被面包吃完了。','面包被吃我完了。'],'당하는 쪽(面包) + 被 + 행위자(我) + 동사.']] },
+{ id:'bi', g:2, t:'比 비교문', s:'A가 B보다',
+  f:'A + 比 + B + 형용사 (+ 一点儿 / 得多 / 수량) / A + 比 + B + 更·还 + 형용사',
+  d:'A가 B보다 ~하다. 형용사 앞에 很, 非常, 太는 쓸 수 없고 更, 还는 쓸 수 있어요. 차이는 형용사 뒤에 붙여요.',
+  k:['比'],
+  ex:[['今天比昨天冷。','Jīntiān bǐ zuótiān lěng.','오늘은 어제보다 춥다.'],
+      ['哥哥比我大三岁。','Gēge bǐ wǒ dà sān suì.','형은 나보다 세 살 많다.']],
+  x:['他比我很高。','他比我高多了。','比 문장에는 很을 쓰지 않아요.'],
+  q:[['这件衣服比那件（ ）便宜。',['更','很','非常'],'比 비교문에서는 更만 쓸 수 있어요.'],
+     ['바른 문장은?',['我比他大两岁。','我比他两岁大。','我两岁比他大。'],'차이(两岁)는 형용사 뒤에 와요.']] },
+{ id:'meiyou', g:2, t:'没有 / 一样', s:'비교 부정·동등',
+  f:'A + 没有 + B + (那么) + 형용사 / A + 跟 + B + 一样 (+ 형용사)',
+  d:'没有는 "A는 B만큼 ~하지 않다", 跟…一样은 "A와 B가 같다"예요.',
+  k:['没有','跟','一样'],
+  ex:[['我没有他那么聪明。','Wǒ méiyǒu tā nàme cōngming.','나는 그만큼 똑똑하지 않다.'],
+      ['我的手机跟你的一样。','Wǒ de shǒujī gēn nǐ de yíyàng.','내 휴대폰은 네 것과 같다.']],
+  x:['我没有他很高。','我没有他高。','没有 비교문에도 很을 쓰지 않아요.'],
+  q:[['这个房间（ ）那个房间大。 (이 방은 저 방만큼 크지 않다)',['没有','不','跟'],'"~만큼 ~하지 않다"는 没有예요.'],
+     ['我的爱好跟你（ ）。',['一样','一起','一共'],'跟…一样: ~와 같다.']] },
+{ id:'rang', g:2, t:'让 / 叫', s:'~하게 하다',
+  f:'A + 让 / 叫 + B + 동사·형용사',
+  d:'A가 B에게 ~하게 하다. 让 바로 뒤에 사람이 오고, 그 사람이 다음 동작을 해요. 부정사는 让 앞에 와요.',
+  k:['让','叫'],
+  ex:[['妈妈让我早点儿睡觉。','Māma ràng wǒ zǎo diǎnr shuìjiào.','엄마는 나에게 일찍 자라고 하셨다.'],
+      ['老师叫我们回答问题。','Lǎoshī jiào wǒmen huídá wèntí.','선생님이 우리에게 질문에 대답하라고 하셨다.']],
+  x:['她让高兴我。','她让我很高兴。','让 바로 뒤에 사람이 와요.'],
+  q:[['这件事（ ）我很生气。',['让','被','把'],'"이 일이 나를 화나게 했다" → 让.'],
+     ['바른 문장은?',['爸爸不让我玩儿游戏。','爸爸让不我玩儿游戏。','爸爸让我游戏玩儿不。'],'不는 让 앞에 와요.']] },
+{ id:'shide', g:2, t:'是…的', s:'강조',
+  f:'주어 + 是 + 시간·장소·방법·대상 + 동사 + 的',
+  d:'이미 일어난 일에서 언제, 어디서, 어떻게, 누구와 했는지를 강조해요. 끝에 了가 아니라 的를 써요.',
+  k:['是','的'],
+  ex:[['我是坐飞机来的。','Wǒ shì zuò fēijī lái de.','나는 비행기를 타고 왔다.'],
+      ['你是什么时候到北京的？','Nǐ shì shénme shíhou dào Běijīng de?','너는 언제 베이징에 도착했니?']],
+  x:['我是昨天来了。','我是昨天来的。','是…的 문장 끝에는 的를 써요.'],
+  q:[['这件衣服是在哪儿买（ ）？',['的','了','过'],'어디서 샀는지 강조 → 是…的.'],
+     ['바른 문장은?',['我是跟朋友一起来的。','我是跟朋友一起来了。','我跟朋友是一起来了。'],'是 + 강조할 내용 + 동사 + 的.']] },
+
+{ id:'yuelaiyue', g:3, t:'越来越 / 越…越…', s:'점점, ~할수록',
+  f:'越来越 + 형용사 (+ 了) / 越 + A + 越 + B',
+  d:'越来越는 "점점 ~해지다", 越A越B는 "A할수록 B하다"예요. 둘 다 뒤에 很, 非常을 붙이지 않아요.',
+  k:['越来越','越'],
+  ex:[['天气越来越热了。','Tiānqì yuè lái yuè rè le.','날씨가 점점 더워진다.'],
+      ['雨越下越大。','Yǔ yuè xià yuè dà.','비가 내릴수록 더 세진다.']],
+  x:['他越来越很胖。','他越来越胖了。','越来越 뒤에 很을 쓰지 않아요.'],
+  q:[['你的汉语（ ）好了！',['越来越','越','很'],'"점점 좋아졌다" → 越来越.'],
+     ['这本书我越看（ ）喜欢。',['越','更','很'],'越A越B: 볼수록 좋아진다.']] },
+{ id:'yijiu', g:3, t:'一…就…', s:'~하자마자',
+  f:'(주어) + 一 + 동작A + 就 + 동작B',
+  d:'A하자마자 B하다, 또는 A하기만 하면 B하다. 一와 就는 각각 동사 앞에 와요.',
+  k:['一','就'],
+  ex:[['我一到家就给你打电话。','Wǒ yí dào jiā jiù gěi nǐ dǎ diànhuà.','집에 도착하자마자 너에게 전화할게.'],
+      ['他一喝酒就脸红。','Tā yì hē jiǔ jiù liǎn hóng.','그는 술만 마시면 얼굴이 빨개진다.']],
+  x:['我就下课一去吃饭。','我一下课就去吃饭。','一 → 就 순서예요.'],
+  q:[['他一回家（ ）睡觉了。',['就','才','再'],'一…就…: ~하자마자.'],
+     ['바른 문장은?',['我一听就明白了。','我就听一明白了。','一我听就明白了。'],'주어 + 一 + 동사 + 就 + 동사.']] },
+{ id:'youzai', g:3, t:'又 / 再', s:'또, 다시',
+  f:'又 + 동사 (이미 또 했다) / 再 + 동사 (앞으로 다시 하다)',
+  d:'이미 일어난 반복은 又, 아직 일어나지 않은 반복은 再예요. IBT에서 zài(再/在)도 헷갈리니 같이 기억하세요.',
+  k:['又','再'],
+  ex:[['他昨天来了，今天又来了。','Tā zuótiān lái le, jīntiān yòu lái le.','그는 어제 왔는데 오늘 또 왔다.'],
+      ['请你再说一遍。','Qǐng nǐ zài shuō yí biàn.','다시 한 번 말해 주세요.']],
+  x:['明天又来吧。','明天再来吧。','미래의 반복은 再예요.'],
+  q:[['这个电影太好看了，我想（ ）看一次。',['再','又','在'],'앞으로 다시 볼 거니까 再예요.'],
+     ['你怎么（ ）迟到了？',['又','再','才'],'이미 또 지각했으니 又예요.']] },
+{ id:'caijiu', g:3, t:'才 / 就', s:'늦게, 일찍',
+  f:'시간 + 才 + 동사 (늦게, 이제야) / 시간 + 就 + 동사 + 了 (일찍, 벌써)',
+  d:'才는 예상보다 늦음, 就는 예상보다 빠름을 나타내요. 就 문장은 끝에 了가 자주 붙고, 才 문장에는 了를 붙이지 않아요.',
+  k:['才','就'],
+  ex:[['他十点才起床。','Tā shí diǎn cái qǐchuáng.','그는 10시가 돼서야 일어났다.'],
+      ['他六点就起床了。','Tā liù diǎn jiù qǐchuáng le.','그는 6시에 벌써 일어났다.']],
+  x:['他十一点才到了。','他十一点才到。','才 문장에는 了를 쓰지 않아요.'],
+  q:[['会议九点开始，他九点半（ ）来。',['才','就','又'],'늦게 왔으니 才예요.'],
+     ['别着急，我马上（ ）到。',['就','才','再'],'곧 바로 도착하니 就예요.']] },
+{ id:'xian', g:3, t:'先…然后…', s:'먼저 ~하고 나서',
+  f:'先 + A，然后 / 再 + B',
+  d:'먼저 A하고 그다음에 B하다. 일의 순서를 말할 때 써요.',
+  k:['先','然后','再'],
+  ex:[['我们先吃饭，然后去看电影吧。','Wǒmen xiān chī fàn, ránhòu qù kàn diànyǐng ba.','우리 먼저 밥 먹고 그다음에 영화 보러 가자.'],
+      ['你先休息一下，再做作业。','Nǐ xiān xiūxi yíxià, zài zuò zuòyè.','먼저 좀 쉬고 나서 숙제해.']],
+  x:['我先然后洗澡睡觉。','我先洗澡，然后睡觉。','先 뒤에 첫 번째 동작, 然后 뒤에 두 번째 동작.'],
+  q:[['你（ ）把手洗干净，再吃饭。',['先','又','就'],'먼저 손을 씻고 → 先.'],
+     ['我们先去超市，（ ）回家。',['然后','虽然','因为'],'先…然后…: 먼저 ~하고 나서.']] },
+{ id:'yibian', g:3, t:'一边…一边…', s:'~하면서',
+  f:'(주어) + 一边 + A + 一边 + B',
+  d:'두 동작을 동시에 할 때 써요. 주어는 맨 앞에 와요.',
+  k:['一边'],
+  ex:[['他一边吃饭一边看电视。','Tā yìbiān chī fàn yìbiān kàn diànshì.','그는 밥을 먹으면서 TV를 본다.'],
+      ['我们一边走一边聊天。','Wǒmen yìbiān zǒu yìbiān liáotiān.','우리는 걸으면서 이야기했다.']],
+  x:['一边他听音乐，一边写作业。','他一边听音乐，一边写作业。','주어가 一边 앞에 와요.'],
+  q:[['妹妹喜欢一边唱歌（ ）跳舞。',['一边','一起','一直'],'一边…一边…: ~하면서 ~하다.'],
+     ['바른 문장은?',['她一边笑一边说。','一边她笑一边说。','她一边笑说一边。'],'주어 + 一边 A + 一边 B.']] },
+
+{ id:'suiran', g:4, t:'虽然…但是…', s:'비록 ~지만',
+  f:'虽然 + A，但是 / 可是 + B',
+  d:'비록 A이지만 B하다. 但是 뒤에 也, 还是를 자주 같이 써요. 짝을 맞추는 문제가 자주 나와요.',
+  k:['虽然','但是'],
+  ex:[['虽然很累，但是我很高兴。','Suīrán hěn lèi, dànshì wǒ hěn gāoxìng.','피곤하지만 나는 기쁘다.'],
+      ['这个菜虽然便宜，但是很好吃。','Zhège cài suīrán piányi, dànshì hěn hǎochī.','이 요리는 싸지만 맛있다.']],
+  x:['虽然下雨，所以他来了。','虽然下雨，但是他还是来了。','虽然은 但是와 짝이에요.'],
+  q:[['虽然他很忙，（ ）每天都锻炼。',['但是','所以','就'],'虽然…但是…'],
+     ['（ ）她不太高，但是篮球打得很好。',['虽然','因为','如果'],'뒤에 但是가 있으니 虽然이에요.']] },
+{ id:'yinwei', g:4, t:'因为…所以…', s:'~때문에',
+  f:'因为 + 원인，所以 + 결과',
+  d:'A 때문에 B하다. 원인이 먼저, 결과가 뒤에 와요.',
+  k:['因为','所以'],
+  ex:[['因为下雨了，所以我们没去爬山。','Yīnwèi xià yǔ le, suǒyǐ wǒmen méi qù páshān.','비가 와서 우리는 등산을 안 갔다.'],
+      ['因为他生病了，所以今天请假了。','Yīnwèi tā shēngbìng le, suǒyǐ jīntiān qǐngjià le.','그는 아파서 오늘 휴가를 냈다.']],
+  x:['所以我很累，因为昨天没睡觉。','因为昨天没睡觉，所以我很累。','因为(원인)가 먼저예요.'],
+  q:[['因为太贵了，（ ）我没买。',['所以','但是','而且'],'원인 → 결과: 所以.'],
+     ['他今天没来上课，（ ）他感冒了。',['因为','所以','虽然'],'뒤 문장이 이유니까 因为예요.']] },
+{ id:'ruguo', g:4, t:'如果…就…', s:'만약 ~라면',
+  f:'如果 + A，(주어) + 就 + B',
+  d:'만약 A라면 B하다. 就는 부사라서 뒤 문장의 주어 뒤에 와요.',
+  k:['如果','就'],
+  ex:[['如果明天下雨，我们就不去了。','Rúguǒ míngtiān xià yǔ, wǒmen jiù bú qù le.','내일 비가 오면 우리는 안 갈 거야.'],
+      ['如果你有问题，就问老师。','Rúguǒ nǐ yǒu wèntí, jiù wèn lǎoshī.','질문이 있으면 선생님께 물어봐.']],
+  x:['如果你累，就我们休息吧。','如果你累，我们就休息吧。','就는 주어 뒤에 와요.'],
+  q:[['如果你不舒服，（ ）去医院吧。',['就','才','又'],'如果…就…'],
+     ['바른 문장은?',['如果有时间，我就去看你。','如果有时间，就我去看你。','就如果有时间，我去看你。'],'주어(我) + 就 + 동사.']] },
+{ id:'budan', g:4, t:'不但…而且…', s:'~뿐만 아니라',
+  f:'(주어) + 不但 + A，而且 + B',
+  d:'A할 뿐만 아니라 B하기도 하다. 두 부분의 주어가 같으면 주어는 不但 앞에 와요.',
+  k:['不但','而且'],
+  ex:[['她不但漂亮，而且很聪明。','Tā búdàn piàoliang, érqiě hěn cōngming.','그녀는 예쁠 뿐만 아니라 똑똑하다.'],
+      ['这家饭店不但菜好吃，而且很便宜。','Zhè jiā fàndiàn búdàn cài hǎochī, érqiě hěn piányi.','이 식당은 음식이 맛있을 뿐만 아니라 싸다.']],
+  x:['不但他会说汉语，而且会说英语。','他不但会说汉语，而且会说英语。','주어가 같으면 주어를 不但 앞에 써요.'],
+  q:[['这个房间不但很大，（ ）很干净。',['而且','但是','所以'],'不但…而且…'],
+     ['바른 문장은?',['他不但会唱歌，而且会跳舞。','不但他会唱歌，而且会跳舞。','他而且会唱歌，不但会跳舞。'],'주어 + 不但 A，而且 B.']] },
+{ id:'chule', g:4, t:'除了…以外', s:'~외에, ~을 빼고',
+  f:'除了 + A + 以外，还 / 也 + B (A 말고 B도) / 除了 + A + 以外，都 + B (A만 빼고 모두)',
+  d:'뒤에 还/也가 오면 "추가", 都가 오면 "제외"예요. 뒤에 오는 부사를 보고 뜻을 판단하세요.',
+  k:['除了','以外','还','都'],
+  ex:[['除了汉语以外，我还学英语。','Chúle Hànyǔ yǐwài, wǒ hái xué Yīngyǔ.','중국어 말고 영어도 배운다.'],
+      ['除了小王以外，大家都来了。','Chúle Xiǎo Wáng yǐwài, dàjiā dōu lái le.','샤오왕 빼고 모두 왔다.']],
+  x:['除了咖啡以外，我都喜欢喝茶。','除了咖啡以外，我还喜欢喝茶。','"커피 말고 차도"는 还예요.'],
+  q:[['除了猫以外，我（ ）喜欢狗。',['还','都','就'],'고양이 말고 개도 → 추가니까 还.'],
+     ['除了星期天以外，他每天（ ）上班。',['都','还','也'],'일요일만 빼고 매일 → 제외니까 都.']] },
+
+{ id:'de3', g:5, t:'的 · 得 · 地', s:'세 가지 de',
+  f:'꾸미는 말 + 的 + 명사 / 동사 + 得 + 정도 / 형용사 + 地 + 동사',
+  d:'셋 다 발음이 de라서 IBT 입력 때 꼭 구별해야 해요. 뒤에 명사가 오면 的, 앞에 동사가 있으면 得, 뒤에 동사가 오면 地예요.',
+  k:['的','得','地'],
+  ex:[['这是我的书。','Zhè shì wǒ de shū.','이것은 내 책이다.'],
+      ['他高兴地说："我考得很好！"','Tā gāoxìng de shuō: "Wǒ kǎo de hěn hǎo!"','그는 기쁘게 "시험 잘 봤어!"라고 말했다.']],
+  x:['他认真的学习。','他认真地学习。','형용사가 동사(学习)를 꾸미면 地예요.'],
+  q:[['她跑（ ）很快。',['得','的','地'],'동사(跑) 뒤에서 정도를 말하니 得예요.'],
+     ['孩子们高兴（ ）唱歌。',['地','的','得'],'형용사(高兴)가 동사(唱歌)를 꾸미니 地예요.']] },
+{ id:'chongdie', g:5, t:'동사 중첩', s:'좀 ~해 보다',
+  f:'AA / A一A (한 글자 동사) / ABAB (두 글자 동사)',
+  d:'동사를 겹치면 "좀 ~해 보다"라는 가벼운 느낌이 돼요. 두 글자 동사는 ABAB로 겹쳐요.',
+  k:['试试','休息休息'],
+  ex:[['你试试这件衣服。','Nǐ shìshi zhè jiàn yīfu.','이 옷 좀 입어 봐.'],
+      ['我们休息休息吧。','Wǒmen xiūxi xiūxi ba.','우리 좀 쉬자.']],
+  x:['我们休休息息吧。','我们休息休息吧。','두 글자 동사는 ABAB예요.'],
+  q:[['你帮我看（ ）这个句子对不对。',['看','着','过'],'看看: 좀 봐 주다.'],
+     ['바른 문장은?',['你介绍介绍你自己吧。','你介介绍绍你自己吧。','你介绍一介绍绍你自己吧。'],'介绍 → 介绍介绍 (ABAB).']] },
+{ id:'zhudong', g:5, t:'会 · 能 · 可以', s:'조동사',
+  f:'会 (배워서 할 줄 안다, ~일 것이다) / 能 (능력·조건상 할 수 있다) / 可以 (해도 된다)',
+  d:'언어나 운동처럼 배워서 하는 건 会, 상황상 가능한지는 能, 허락은 可以예요. 会는 "~일 것이다"라는 추측도 돼요.',
+  k:['会','能','可以'],
+  ex:[['我会游泳。','Wǒ huì yóuyǒng.','나는 수영할 줄 안다.'],
+      ['这儿可以坐吗？','Zhèr kěyǐ zuò ma?','여기 앉아도 되나요?']],
+  x:['你可以说汉语吗？','你会说汉语吗？','배워서 하는 언어 능력은 会예요.'],
+  q:[['明天（ ）下雨，你带伞吧。',['会','能','可以'],'"~일 것이다" 추측은 会예요.'],
+     ['老师，我（ ）用一下你的笔吗？',['可以','会','应该'],'허락을 구할 때는 可以예요.']] }
+];
+
+
+/* 문장 배열: 문법id | 조각(정답 순서, / 구분) | 문장부호 | 뜻 | 다른 정답(; 구분, 부호 없이) */
+const SENT_RAW = `
+le|我/买了/一本/汉语书|。|나는 중국어 책을 한 권 샀다.|
+le|他/没/来/上课|。|그는 수업에 오지 않았다.|
+guo|你/去过/中国/吗|？|너는 중국에 가 본 적 있니?|
+guo|我/没/吃过/羊肉|。|나는 양고기를 먹어 본 적이 없다.|
+guo|这个电影/我/看过/两次|。|이 영화를 나는 두 번 봤다.|我看过两次这个电影
+zhe|教室的/门/开着|。|교실 문이 열려 있다.|
+zhe|桌子上/放着/一本/词典|。|책상 위에 사전이 한 권 놓여 있다.|
+zhengzai|妈妈/正在/做饭/呢|。|엄마는 밥을 하고 계신다.|
+yaole|火车/快要/开/了|。|기차가 곧 출발하려고 한다.|
+yaole|我们/下个星期/就要/结婚了|。|우리는 다음 주에 결혼한다.|下个星期我们就要结婚了
+jieguo|我/已经/写完/作业了|。|나는 이미 숙제를 다 했다.|
+jieguo|我/终于/找到了/我的护照|。|나는 마침내 내 여권을 찾았다.|
+jieguo|你/听懂/老师的话/了吗|？|너는 선생님 말씀을 알아들었니?|
+fangxiang|他/跑进/教室/来了|。|그가 교실로 뛰어 들어왔다.|
+keneng|黑板上的字/我/看不清楚|。|칠판의 글씨가 잘 안 보인다.|我看不清楚黑板上的字
+keneng|这么多菜/我们/吃得完/吗|？|이렇게 많은 요리를 우리가 다 먹을 수 있을까?|我们吃得完这么多菜吗
+chengdu|她/唱歌/唱得/非常好|。|그녀는 노래를 아주 잘 부른다.|
+chengdu|他/跑得/比我/快|。|그는 나보다 빨리 달린다.|他比我跑得快
+shiliang|我/学了/两年/汉语|。|나는 중국어를 2년 배웠다.|
+shiliang|我/每天/锻炼/一个小时|。|나는 매일 한 시간씩 운동한다.|每天我锻炼一个小时
+ba|你/把/这些东西/放在桌子上|。|이 물건들을 책상 위에 놓아.|
+ba|我/没/把/作业/写完|。|나는 숙제를 다 하지 못했다.|
+bei|我的自行车/被/朋友/骑走了|。|내 자전거는 친구가 타고 가 버렸다.|
+bei|我的伞/被/别人/拿走了|。|내 우산은 다른 사람이 가져가 버렸다.|
+bi|今天/比/昨天/冷多了|。|오늘은 어제보다 훨씬 춥다.|
+bi|哥哥/比我/大/三岁|。|형은 나보다 세 살 많다.|
+bi|这件衣服/比/那件/更便宜|。|이 옷은 저 옷보다 더 싸다.|
+meiyou|这个房间/没有/那个房间/大|。|이 방은 저 방만큼 크지 않다.|
+meiyou|我的爱好/跟/你的/一样|。|내 취미는 너의 것과 같다.|
+rang|妈妈/让我/早点儿/睡觉|。|엄마는 나에게 일찍 자라고 하셨다.|
+rang|这件事/让/我/很生气|。|이 일은 나를 화나게 했다.|
+shide|我/是/坐飞机/来的|。|나는 비행기를 타고 왔다.|
+shide|你/是什么时候/到北京/的|？|너는 언제 베이징에 도착했니?|
+yuelaiyue|你的汉语/越来越/好/了|。|네 중국어가 점점 좋아진다.|
+yuelaiyue|雨/越下/越大|。|비가 내릴수록 더 세진다.|
+yijiu|我/一到家/就/给你打电话|。|집에 도착하자마자 너에게 전화할게.|
+youzai|请你/再/说/一遍|。|다시 한 번 말해 주세요.|
+caijiu|他/十点/才/起床|。|그는 10시가 돼서야 일어났다.|
+xian|你/先休息/一下/再做作业|。|먼저 좀 쉬고 나서 숙제해.|
+yibian|他/一边吃饭/一边/看电视|。|그는 밥을 먹으면서 TV를 본다.|
+de3|他/认真地/回答了/老师的问题|。|그는 선생님의 질문에 성실하게 대답했다.|
+chongdie|你/试试/这件/衣服|。|이 옷 좀 입어 봐.|
+zhudong|你/会/说/汉语吗|？|너는 중국어를 할 줄 아니?|
+zhudong|这儿/可以/坐/吗|？|여기 앉아도 되나요?|
+`;
+
+/* ---------- data prep ---------- */
+const TOPICS = [];
+RAW.trim().split('\n').forEach(line => {
+  line = line.trim();
+  if (!line) return;
+  if (line[0] === '#') { TOPICS.push({ name: line.slice(1), words: [] }); return; }
+  const [h, p, m] = line.split('|');
+  const t = TOPICS.length - 1;
+  TOPICS[t].words.push({ h, p, m, t, key: t + ':' + h });
+});
+const ALL = TOPICS.flatMap(t => t.words);
+const byId = Object.fromEntries(CARDS.map(c => [c.id, c]));
+const QTOTAL = CARDS.reduce((n, c) => n + c.q.length, 0);
+const SENTS = SENT_RAW.trim().split('\n').map((line, i) => {
+  const [gid, ch, p, ko, alt] = line.trim().split('|');
+  const chunks = ch.split('/');
+  return { id: 's' + i, gid, g: byId[gid].g, chunks, p, ko, ans: chunks.join(''), ok: [chunks.join('')].concat(alt ? alt.split(';') : []) };
+});
+const SGROUPS = GROUPS.map((_, i) => i).filter(i => SENTS.some(s => s.g === i));
+
+/* 14주 플랜: 1~8주 새 단어, 1~10주 문법 3개씩, 11~14주 실전 복습 */
+const WEEKS = 14;
+const PLAN = Array.from({ length: WEEKS }, () => ({ vt: [], gc: [] }));
+(function () {
+  const per = ALL.length / 8; let cum = 0;
+  TOPICS.forEach((t, i) => { const wk = Math.min(7, Math.floor((cum + t.words.length / 2) / per)); PLAN[wk].vt.push(i); cum += t.words.length; });
+  CARDS.forEach((c, i) => PLAN[Math.floor(i / 3)].gc.push(c.id));
+})();
+const phaseOf = w => w < 8 ? '1~8주 · 새 단어 + 문법' : w < 10 ? '9~10주 · 문법 마무리 + 단어 복습' : '11~14주 · 실전 복습';
+
+/* ---------- storage ---------- */
+const KEY = 'hsk3-app-v1';
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+function load() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  s = s || {};
+  return {
+    start: s.start || todayStr(),
+    marks: s.marks || {},
+    res: s.res || {},
+    sres: s.sres || {},
+    s: Object.assign({ mode: 'check', grp: 'all', hideA: true, hint: true, scope: 'all', shuffle: true }, s.s),
+    v: Object.assign({ mode: 'study', topic: 0, hideP: false, hideM: false, dir: 'h2m', scope: 'all', shuffle: true }, s.v),
+    g: Object.assign({ mode: 'study', grp: 'all', noPy: false, noKo: false, scope: 'all', shuffle: true }, s.g)
+  };
+}
+let S = load();
+if (S.v.topic !== 'all' && !TOPICS[S.v.topic]) S.v.topic = 0;
+if (S.g.grp !== 'all' && !GROUPS[S.g.grp]) S.g.grp = 'all';
+if (S.s.grp !== 'all' && !SGROUPS.includes(S.s.grp)) S.s.grp = 'all';
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+save();
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const main = $('#main'), rail = $('#rail');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const hasHan = s => /[一-鿿]/.test(s);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const knownCount = ws => ws.filter(w => S.marks[w.key] === 'k').length;
+const unknownWords = () => ALL.filter(w => S.marks[w.key] === 'u');
+const cardsOf = g => g === 'all' ? CARDS : CARDS.filter(c => c.g === g);
+const qids = c => c.q.map((_, i) => c.id + '-' + i);
+const rightCount = cs => cs.flatMap(qids).filter(id => S.res[id] === 'k').length;
+const wrongCount = () => Object.values(S.res).filter(v => v === 'u').length;
+const sentsOf = g => g === 'all' ? SENTS : SENTS.filter(s => s.g === g);
+const sRight = () => SENTS.filter(s => S.sres[s.id] === 'k').length;
+const sWrong = () => SENTS.filter(s => S.sres[s.id] === 'u').length;
+const canSpeak = 'speechSynthesis' in window;
+function speak(text) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-CN'; u.rate = 0.8; speechSynthesis.speak(u); } catch (e) {} }
+const SPK = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function segBtn(sec, k, v, label) {
+  const cur = k === 'shuffle' ? (S[sec].shuffle ? '1' : '0') : S[sec][k];
+  return `<button data-opt="${k}" data-val="${v}" aria-pressed="${String(cur) === String(v)}">${label}</button>`;
+}
+function weekIndex() {
+  const days = Math.floor((new Date(todayStr() + 'T00:00') - new Date(S.start + 'T00:00')) / 86400000);
+  return Math.floor(days / 7);
+}
+
+/* ---------- routing ---------- */
+const VIEWS = ['home', 'vocab', 'grammar', 'sentence'];
+const secOf = v => v === 'vocab' ? 'v' : v === 'grammar' ? 'g' : 's';
+let view = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+function go(v, after) {
+  view = v; resetArmed = false;
+  try { if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v); } catch (e) {}
+  render();
+  if (after) after(); else window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.includes(h) && h !== view) { view = h; render(); window.scrollTo(0, 0); } });
+
+/* ---------- header ---------- */
+function renderTop() {
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === view));
+  $('#subbar').hidden = view === 'home';
+  if (view === 'home') return;
+  const sec = S[secOf(view)];
+  document.querySelectorAll('#modes button').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.mode === sec.mode);
+    b.textContent = b.dataset.mode === 'study' ? (view === 'sentence' ? '정답 보기' : '공부') : (view === 'sentence' ? '연습' : '확인');
+  });
+  if (view === 'sentence') {
+    const chip = (v, name, ss) => `<button class="chip" data-sgrp="${v}" aria-pressed="${String(S.s.grp) === String(v)}">${name}<small>${ss.filter(s => S.sres[s.id] === 'k').length}/${ss.length}</small></button>`;
+    rail.innerHTML = chip('all', '전체', SENTS) + SGROUPS.map(i => chip(i, GROUPS[i], sentsOf(i))).join('');
+  } else if (view === 'vocab') {
+    const chip = (v, name, ws) => `<button class="chip" data-topic="${v}" aria-pressed="${String(S.v.topic) === String(v)}">${name}<small>${knownCount(ws)}/${ws.length}</small></button>`;
+    rail.innerHTML = chip('all', '전체', ALL) + TOPICS.map((t, i) => chip(i, t.name, t.words)).join('');
+  } else {
+    const chip = (v, name, cs) => `<button class="chip" data-grp="${v}" aria-pressed="${String(S.g.grp) === String(v)}">${name}<small>${cs.length}</small></button>`;
+    rail.innerHTML = chip('all', '전체', CARDS) + GROUPS.map((g, i) => chip(i, g, cardsOf(i))).join('');
+  }
+}
+
+/* ---------- home ---------- */
+function gPill(c) {
+  const ids = qids(c), done = ids.filter(id => S.res[id]);
+  if (!done.length) return '<span class="pill">안 풀었음</span>';
+  const ok = ids.filter(id => S.res[id] === 'k').length;
+  const cls = ok === ids.length ? 'k' : (ids.some(id => S.res[id] === 'u') ? 'u' : '');
+  return `<span class="pill ${cls}">${ok}/${ids.length}</span>`;
+}
+function renderHome() {
+  const wi = weekIndex();
+  const known = knownCount(ALL), right = rightCount(CARDS);
+  const uw = unknownWords().length, wq = wrongCount(), sr = sRight(), sw = sWrong();
+  let weekTitle, todo;
+  if (wi < 0) {
+    weekTitle = `<div class="weekno">시작 전</div><div class="phase">시작일이 아직 안 됐어요</div>`;
+    todo = '<p class="hint">시작일을 오늘로 바꾸면 1주차 할 일이 보여요.</p>';
+  } else if (wi >= WEEKS) {
+    weekTitle = `<div class="weekno">플랜 완료</div><div class="phase">14주를 모두 지났어요. 시험 접수해 볼까요?</div>`;
+    todo = reviewTodo();
+  } else {
+    const P = PLAN[wi];
+    weekTitle = `<div class="weekno">${wi + 1}주차<small>/ ${WEEKS}주</small></div><div class="phase">${phaseOf(wi)}</div>`;
+    let t = '';
+    if (P.vt.length) t += '<div class="sub">단어</div>' + P.vt.map(i => `<button class="row" data-go-topic="${i}"><span class="nm"><span>${TOPICS[i].name}</span></span><span class="rt">${knownCount(TOPICS[i].words)}/${TOPICS[i].words.length} 외움<span class="go">›</span></span></button>`).join('');
+    else if (wi < 10) t += `<div class="sub">단어</div><button class="row" data-review="v"><span class="nm"><span>몰라요 단어 복습</span></span><span class="rt">${uw}개<span class="go">›</span></span></button>`;
+    if (P.gc.length) t += '<div class="sub">문법</div>' + P.gc.map(id => `<button class="row" data-go-card="${id}"><span class="nm"><span class="zhs">${esc(byId[id].t)}</span><span>${esc(byId[id].s)}</span></span><span class="rt">${gPill(byId[id])}<span class="go">›</span></span></button>`).join('');
+    const ws = SENTS.filter(s => P.gc.includes(s.gid));
+    if (ws.length) t += `<div class="sub">문장 배열</div><button class="row" data-sweek="${wi}"><span class="nm"><span>이번 주 문법으로 배열 연습</span></span><span class="rt">${ws.filter(s => S.sres[s.id] === 'k').length}/${ws.length} 맞힘<span class="go">›</span></span></button>`;
+    if (!P.vt.length && !P.gc.length && wi >= 10) t += reviewTodo();
+    todo = t;
+  }
+  const weekbar = Array.from({ length: WEEKS }, (_, i) => `<i class="${i < wi ? 'past' : i === wi ? 'now' : ''}"></i>`).join('');
+  const planRows = PLAN.map((P, i) => `<tr class="${i === wi ? 'now' : ''}"><th>${i + 1}주</th><td>${P.vt.length ? P.vt.map(t => TOPICS[t].name).join(', ') : (i < 10 ? '몰라요 단어 복습' : '단어 전체 확인')}</td><td class="zhs">${P.gc.length ? P.gc.map(id => esc(byId[id].t)).join(' · ') : '문법 전체 60문제'}</td></tr>`).join('');
+  main.innerHTML = `<div class="home">
+    <div class="panel">
+      <div class="weekhead"><div>${weekTitle}</div>
+        <label class="startf" for="start">시작일<input type="date" id="start" value="${S.start}"></label></div>
+      <div class="weekbar" aria-hidden="true">${weekbar}</div>
+    </div>
+    <div class="panel">
+      <h2>이번 주 할 일<small>누르면 바로 이동해요</small></h2>
+      <div class="todo">${todo}</div>
+      <details class="plan"><summary>14주 전체 일정 보기</summary>
+        <div class="plantbl"><table><thead><tr><th>주</th><th>단어</th><th>문법</th></tr></thead><tbody>${planRows}</tbody></table></div>
+      </details>
+    </div>
+    <div class="panel">
+      <h2>전체 진도</h2>
+      <div class="stats">
+        <div class="stat"><span class="lab">단어 외움</span><span class="big">${known}<small> / ${ALL.length}</small></span><div class="meter"><i style="width:${known / ALL.length * 100}%"></i></div></div>
+        <div class="stat"><span class="lab">문법 문제 맞힘</span><span class="big">${right}<small> / ${QTOTAL}</small></span><div class="meter"><i style="width:${right / QTOTAL * 100}%"></i></div></div>
+        <div class="stat"><span class="lab">문장 배열 맞힘</span><span class="big">${sr}<small> / ${SENTS.length}</small></span><div class="meter"><i style="width:${sr / SENTS.length * 100}%"></i></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>복습 필요</h2>
+      <div class="review">
+        <button class="rv" data-review="v" ${uw ? '' : 'disabled'}><b>${uw}</b><span>${uw ? '몰라요 단어 · 눌러서 다시 확인' : '몰라요 단어가 없어요'}</span></button>
+        <button class="rv" data-review="g" ${wq ? '' : 'disabled'}><b>${wq}</b><span>${wq ? '틀린 문법 문제 · 눌러서 다시 풀기' : '틀린 문법 문제가 없어요'}</span></button>
+        <button class="rv" data-review="s" ${sw ? '' : 'disabled'}><b>${sw}</b><span>${sw ? '틀린 문장 배열 · 눌러서 다시 풀기' : '틀린 문장 배열이 없어요'}</span></button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>카테고리<small>준비 중인 것은 하나씩 추가돼요</small></h2>
+      <div class="cats">
+        <button class="cat on" data-view="vocab"><b>단어</b><span>주제별 ${ALL.length}개</span></button>
+        <button class="cat on" data-view="grammar"><b>문법</b><span>${CARDS.length}개 카드 · ${QTOTAL}문제</span></button>
+        <div class="cat soon"><b>헷갈리는 글자</b><span>준비 중</span></div>
+        <button class="cat on" data-view="sentence"><b>문장 배열</b><span>쓰기 1부분 · ${SENTS.length}문제</span></button>
+        <div class="cat soon"><b>양사·접속사</b><span>준비 중</span></div>
+        <div class="cat soon"><b>상황별 표현</b><span>준비 중</span></div>
+      </div>
+    </div>
+    <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span></div>
+  </div>`;
+}
+function reviewTodo() {
+  return `<div class="sub">실전</div>
+    <button class="row" data-full="v"><span class="nm"><span>단어 전체 확인 (섞기)</span></span><span class="rt">${ALL.length}개<span class="go">›</span></span></button>
+    <button class="row" data-full="g"><span class="nm"><span>문법 전체 문제</span></span><span class="rt">${QTOTAL}문제<span class="go">›</span></span></button>
+    <button class="row" data-full="s"><span class="nm"><span>문장 배열 전체</span></span><span class="rt">${SENTS.length}문제<span class="go">›</span></span></button>
+    <button class="row" data-review="v"><span class="nm"><span>몰라요 단어 다시</span></span><span class="rt">${unknownWords().length}개<span class="go">›</span></span></button>
+    <button class="row" data-review="g"><span class="nm"><span>틀린 문법 다시</span></span><span class="rt">${wrongCount()}문제<span class="go">›</span></span></button>`;
+}
+
+/* ---------- vocab ---------- */
+let vdeck = null, gdeck = null, resetArmed = false;
+const vWords = topic => topic === 'all' ? ALL : TOPICS[topic].words;
+function wordCard(w) {
+  return `<div class="w" data-st="${S.marks[w.key] || ''}" role="button" tabindex="0"><i class="dot"></i>` +
+    (canSpeak ? `<button class="say" data-say="${w.h}" aria-label="${w.h} 발음 듣기">${SPK}</button>` : '') +
+    `<span class="h">${w.h}</span><span class="p">${w.p}</span><span class="m">${w.m}</span></div>`;
+}
+function renderVocabStudy() {
+  const V = S.v, hiding = V.hideP || V.hideM;
+  const list = V.topic === 'all' ? TOPICS.map((_, i) => i) : [V.topic];
+  main.innerHTML = `<div class="tools">
+      <button class="tog" data-tog="hideP" aria-pressed="${V.hideP}">병음 가리기</button>
+      <button class="tog" data-tog="hideM" aria-pressed="${V.hideM}">뜻 가리기</button>
+      <span class="hint">${hiding ? '카드를 누르면 가린 부분이 보여요' : (canSpeak ? '스피커 버튼을 누르면 발음이 나와요' : '')}</span>
+    </div>
+    <div class="legend"><span><i class="k"></i>알아요</span><span><i class="u"></i>몰라요</span><span>확인 모드에서 표시한 결과예요</span></div>
+    <div class="${V.hideP ? 'hideP ' : ''}${V.hideM ? 'hideM' : ''}">` +
+    list.map(i => `<section class="grp"><h2>${TOPICS[i].name}<small>${TOPICS[i].words.length}개</small></h2><div class="vgrid">${TOPICS[i].words.map(wordCard).join('')}</div></section>`).join('') + `</div>`;
+}
+function buildVDeck(items) {
+  let ws = items;
+  if (!ws) {
+    ws = vWords(S.v.topic);
+    if (S.v.scope === 'u') ws = ws.filter(w => S.marks[w.key] === 'u');
+    if (S.v.scope === 'n') ws = ws.filter(w => !S.marks[w.key]);
+  }
+  ws = ws.slice(); if (S.v.shuffle) shuffle(ws);
+  vdeck = { items: ws, i: 0, revealed: false, known: 0, unknown: [] };
+}
+function renderVocabCheck() {
+  if (!vdeck) buildVDeck();
+  const n = vdeck.items.length; let body;
+  if (!n) {
+    body = `<div class="empty">${S.v.scope === 'u' ? '여기서 몰라요로 표시한 단어가 없어요.<br>범위를 ‘전체’로 바꿔서 시작해 보세요.' : '이 주제의 단어를 모두 한 번씩 봤어요.<br>범위를 ‘전체’나 ‘몰라요만’으로 바꿔 보세요.'}</div>`;
+  } else if (vdeck.i >= n) {
+    const u = vdeck.unknown;
+    body = `<div class="done"><h2>한 바퀴 끝!</h2>
+      <p class="score"><b class="sk">${vdeck.known}</b> 알아요 &nbsp;·&nbsp; <b class="su">${u.length}</b> 몰라요</p>
+      ${u.length ? `<div class="vmiss">${u.map(w => `<div><b>${w.h}</b><span>${w.p}</span>${w.m}</div>`).join('')}</div>` : '<p class="hint">전부 알았어요. 다른 주제로 넘어가 보세요.</p>'}
+      <div class="acts">${u.length ? `<button class="btn bad" data-act="retry">몰라요 ${u.length}개 다시</button>` : ''}<button class="btn primary" data-act="restart">처음부터 다시</button></div></div>`;
+  } else {
+    const w = vdeck.items[vdeck.i];
+    const front = S.v.dir === 'h2m' ? `<div class="q han">${w.h}</div>` : `<div class="q mean">${w.m}</div>`;
+    const back = S.v.dir === 'h2m' ? `<div class="a"><div class="ap">${w.p}</div><div class="am">${w.m}</div></div>` : `<div class="a"><div class="ah">${w.h}</div><div class="ap">${w.p}</div></div>`;
+    body = `<div class="prog"><span>${TOPICS[w.t].name}</span><span class="num">${vdeck.i + 1} / ${n}</span></div>
+      <div class="track"><i style="width:${vdeck.i / n * 100}%"></i></div>
+      <div class="fc" id="fc" role="button" tabindex="0">
+        ${vdeck.revealed && canSpeak ? `<button class="say" data-say="${w.h}" aria-label="발음 듣기">${SPK}</button>` : ''}
+        ${front}${vdeck.revealed ? back : '<div class="a ph">탭해서 정답 확인</div>'}
+      </div>
+      <div class="acts">${vdeck.revealed ? '<button class="btn bad" data-ans="u">몰라요</button><button class="btn good" data-ans="k">알아요</button>' : '<button class="btn primary" data-act="reveal">정답 보기</button>'}</div>
+      <div class="keys">키보드: 스페이스 = 정답 보기 · ← 몰라요 · → 알아요</div>`;
+  }
+  main.innerHTML = `<div class="check">
+    <div class="opts">
+      <div class="opt"><span>방향</span><div class="seg sm">${segBtn('v', 'dir', 'h2m', '한자 → 뜻')}${segBtn('v', 'dir', 'm2h', '뜻 → 한자')}</div></div>
+      <div class="opt"><span>범위</span><div class="seg sm">${segBtn('v', 'scope', 'all', '전체')}${segBtn('v', 'scope', 'u', '몰라요만')}${segBtn('v', 'scope', 'n', '안 본 것')}</div></div>
+      <div class="opt"><span>순서</span><div class="seg sm">${segBtn('v', 'shuffle', '1', '섞기')}${segBtn('v', 'shuffle', '0', '차례대로')}</div></div>
+    </div>
+    ${body}
+    <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span><button class="link" data-act="reset">${resetArmed ? '한 번 더 누르면 단어 기록이 모두 지워져요' : '단어 기록 지우기'}</button></div>
+  </div>`;
+}
+function vAnswer(v) {
+  const w = vdeck.items[vdeck.i];
+  S.marks[w.key] = v;
+  if (v === 'u') vdeck.unknown.push(w); else vdeck.known++;
+  vdeck.i++; vdeck.revealed = false; save(); render();
+}
+function vReveal() { if (vdeck && vdeck.i < vdeck.items.length && !vdeck.revealed) { vdeck.revealed = true; renderVocabCheck(); } }
+
+/* ---------- grammar ---------- */
+function highlight(s, keys) {
+  const ks = keys.slice().sort((a, b) => b.length - a.length);
+  const re = new RegExp('(' + ks.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g');
+  return esc(s).replace(re, '<mark>$1</mark>');
+}
+function formulaHTML(f) {
+  return f.split(' / ').map(line => `<div class="fl">` + line.split(' + ').map((tk, i) =>
+    (i ? '<span class="plus">+</span>' : '') +
+    `<span class="tk${hasHan(tk) && !/[가-힣]/.test(tk.replace(/\(.*?\)/g, '')) ? ' zhk' : ''}">${esc(tk)}</span>`).join('') + `</div>`).join('');
+}
+function gCard(c) {
+  return `<article class="g" id="g-${c.id}">
+    <div class="gh"><h3>${esc(c.t)}</h3><span class="sub">${esc(c.s)}</span>${gPill(c).replace('안 풀었음', '문제 안 풀었음')}</div>
+    <div class="formula">${formulaHTML(c.f)}</div>
+    <p class="desc">${esc(c.d)}</p>
+    <ul class="ex">${c.ex.map(e => `<li><span class="s">${highlight(e[0], c.k)}</span><span class="py">${esc(e[1])}</span><span class="ko">${esc(e[2])}</span></li>`).join('')}</ul>
+    <div class="mis">
+      <div class="mr wr"><b>✗</b><span class="s">${esc(c.x[0])}</span></div>
+      <div class="mr ok"><b>✓</b><span class="s">${esc(c.x[1])}</span></div>
+      <p>${esc(c.x[2])}</p>
+    </div></article>`;
+}
+function renderGrammarStudy() {
+  const G = S.g;
+  const list = G.grp === 'all' ? GROUPS.map((_, i) => i) : [G.grp];
+  main.innerHTML = `<div class="tools">
+      <button class="tog" data-tog="noPy" aria-pressed="${G.noPy}">병음 숨기기</button>
+      <button class="tog" data-tog="noKo" aria-pressed="${G.noKo}">해석 숨기기</button>
+      <span class="hint">노란 표시가 그 문법의 핵심 글자예요</span>
+    </div>
+    <div class="${G.noPy ? 'noPy ' : ''}${G.noKo ? 'noKo' : ''}">` +
+    list.map(i => `<section class="grp"><h2>${GROUPS[i]}<small>${cardsOf(i).length}개</small></h2><div class="cards">${cardsOf(i).map(gCard).join('')}</div></section>`).join('') + `</div>`;
+}
+function buildGDeck(items) {
+  let qs = items;
+  if (!qs) {
+    qs = [];
+    cardsOf(S.g.grp).forEach(c => c.q.forEach((_, i) => qs.push({ cid: c.id, qi: i })));
+    if (S.g.scope === 'u') qs = qs.filter(q => S.res[q.cid + '-' + q.qi] === 'u');
+    if (S.g.scope === 'n') qs = qs.filter(q => !S.res[q.cid + '-' + q.qi]);
+  }
+  qs = qs.map(q => ({ cid: q.cid, qi: q.qi, order: shuffle([0, 1, 2]) }));
+  if (S.g.shuffle) shuffle(qs);
+  gdeck = { items: qs, i: 0, picked: null, right: 0, wrong: [] };
+}
+function stemHTML(stem, fill) {
+  const blank = fill != null ? `<span class="blank fill">${esc(fill)}</span>` : '<span class="blank">&nbsp;</span>';
+  return stem.split('（ ）').map(p => hasHan(p) ? `<span class="zhs">${esc(p)}</span>` : esc(p)).join(blank);
+}
+function renderGrammarCheck() {
+  if (!gdeck) buildGDeck();
+  const n = gdeck.items.length; let body;
+  if (!n) {
+    body = `<div class="empty">${S.g.scope === 'u' ? '여기서 틀린 문제가 없어요.<br>범위를 ‘전체’로 바꿔서 시작해 보세요.' : '이 분류의 문제를 모두 한 번씩 풀었어요.<br>범위를 ‘전체’나 ‘틀린 것만’으로 바꿔 보세요.'}</div>`;
+  } else if (gdeck.i >= n) {
+    const w = gdeck.wrong, seen = [...new Set(w.map(q => q.cid))];
+    body = `<div class="done"><h2>다 풀었어요!</h2>
+      <p class="score"><b class="sk">${gdeck.right}</b> 맞힘 &nbsp;·&nbsp; <b class="su">${w.length}</b> 틀림</p>
+      ${seen.length ? `<p class="hint">틀린 문법 카드를 다시 읽어 보세요.</p><div class="todo">${seen.map(id => `<button class="row" data-go-card="${id}"><span class="nm"><span class="zhs">${esc(byId[id].t)}</span><span>${esc(byId[id].s)}</span></span><span class="rt">카드 보기<span class="go">›</span></span></button>`).join('')}</div>` : '<p class="hint">전부 맞혔어요. 다른 분류도 풀어 보세요.</p>'}
+      <div class="acts">${w.length ? `<button class="btn bad" data-act="retry">틀린 ${w.length}문제 다시</button>` : ''}<button class="btn primary" data-act="restart">처음부터 다시</button></div></div>`;
+  } else {
+    const it = gdeck.items[gdeck.i], c = byId[it.cid], q = c.q[it.qi];
+    const answered = gdeck.picked !== null, ok = gdeck.picked === 0, isBlank = q[0].includes('（ ）');
+    body = `<div class="prog"><span>${GROUPS[c.g]}</span><span class="num">${gdeck.i + 1} / ${n}</span></div>
+      <div class="track"><i style="width:${gdeck.i / n * 100}%"></i></div>
+      <div class="qc">
+        <span class="tag">${isBlank ? '빈칸에 알맞은 것을 고르세요' : '알맞은 것을 고르세요'}</span>
+        <p class="stem">${stemHTML(q[0], answered && isBlank ? q[1][0] : null)}</p>
+        <div class="choices">${it.order.map((oi, idx) => {
+          const cls = answered && oi === 0 ? ' ok' : answered && oi === gdeck.picked ? ' no' : '';
+          return `<button class="ch${cls}" data-pick="${oi}" ${answered ? 'disabled' : ''}><span class="n">${idx + 1}</span><span class="t">${esc(q[1][oi])}</span></button>`;
+        }).join('')}</div>
+        ${answered ? `<div class="expl"><div>${ok ? '<b class="k">정답!</b>' : '<b class="u">아쉬워요.</b>'} ${esc(q[2])}</div><button class="lnk" data-go-card="${c.id}">${esc(c.t)} 카드 보기</button></div>` : ''}
+      </div>
+      ${answered ? '<button class="btn primary" data-act="next">다음 문제</button>' : ''}
+      <div class="keys">키보드: 1 · 2 · 3 = 고르기 · Enter = 다음</div>`;
+  }
+  main.innerHTML = `<div class="check">
+    <div class="opts">
+      <div class="opt"><span>범위</span><div class="seg sm">${segBtn('g', 'scope', 'all', '전체')}${segBtn('g', 'scope', 'u', '틀린 것만')}${segBtn('g', 'scope', 'n', '안 푼 것')}</div></div>
+      <div class="opt"><span>순서</span><div class="seg sm">${segBtn('g', 'shuffle', '1', '섞기')}${segBtn('g', 'shuffle', '0', '차례대로')}</div></div>
+    </div>
+    ${body}
+    <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span><button class="link" data-act="reset">${resetArmed ? '한 번 더 누르면 문법 기록이 모두 지워져요' : '문법 기록 지우기'}</button></div>
+  </div>`;
+}
+function gPick(oi) {
+  if (!gdeck || gdeck.i >= gdeck.items.length || gdeck.picked !== null) return;
+  const it = gdeck.items[gdeck.i], key = it.cid + '-' + it.qi;
+  gdeck.picked = oi;
+  if (oi === 0) { gdeck.right++; S.res[key] = 'k'; } else { gdeck.wrong.push(it); S.res[key] = 'u'; }
+  save(); renderGrammarCheck();
+}
+function gNext() { if (gdeck && gdeck.picked !== null) { gdeck.i++; gdeck.picked = null; renderGrammarCheck(); window.scrollTo(0, 0); } }
+
+/* ---------- sentence ordering ---------- */
+let sdeck = null;
+function sPill(s) {
+  const r = S.sres[s.id];
+  return r === 'k' ? '<span class="pill k">맞힘</span>' : r === 'u' ? '<span class="pill u">틀림</span>' : '<span class="pill">안 풀었음</span>';
+}
+function scrambled(n, seed) {
+  const idx = Array.from({ length: n }, (_, i) => i);
+  let x = seed * 9301 + 49297;
+  for (let i = n - 1; i > 0; i--) { x = (x * 9301 + 49297) % 233280; const j = Math.floor(x / 233280 * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  if (idx.every((v, i) => v === i)) idx.reverse();
+  return idx;
+}
+function randomOrder(n) {
+  let idx;
+  do { idx = shuffle(Array.from({ length: n }, (_, i) => i)); } while (n > 1 && idx.every((v, i) => v === i));
+  return idx;
+}
+function renderSentStudy() {
+  const list = S.s.grp === 'all' ? SGROUPS : [S.s.grp];
+  main.innerHTML = `<div class="tools">
+      <button class="tog" data-tog="hideA" aria-pressed="${S.s.hideA}">정답 가리기</button>
+      <span class="hint">${S.s.hideA ? '머릿속으로 배열해 보고, 카드를 눌러 정답을 확인하세요' : '조각과 완성 문장을 비교해 보세요'}</span>
+    </div>
+    <div class="${S.s.hideA ? 'hideA' : ''}">` +
+    list.map(g => `<section class="grp"><h2>${GROUPS[g]}<small>${sentsOf(g).length}문제</small></h2><div class="sgrid">${sentsOf(g).map(s => {
+      const order = scrambled(s.chunks.length, +s.id.slice(1) + 3);
+      return `<div class="sc" role="button" tabindex="0">
+        <div class="tiles">${order.map(i => `<span>${esc(s.chunks[i])}</span>`).join('')}</div>
+        <div class="ans">${esc(s.ans + s.p)}</div>
+        <div class="ko">${esc(s.ko)}</div>
+        <div class="meta"><button class="lnk" data-go-card="${s.gid}">${esc(byId[s.gid].t)} 카드</button>${sPill(s)}</div>
+      </div>`;
+    }).join('')}</div></section>`).join('') + `</div>`;
+}
+function buildSDeck(items) {
+  let ss = items;
+  if (!ss) {
+    ss = sentsOf(S.s.grp);
+    if (S.s.scope === 'u') ss = ss.filter(s => S.sres[s.id] === 'u');
+    if (S.s.scope === 'n') ss = ss.filter(s => !S.sres[s.id]);
+  }
+  ss = ss.slice(); if (S.s.shuffle) shuffle(ss);
+  sdeck = { items: ss.map(s => ({ s, bank: randomOrder(s.chunks.length), placed: [] })), i: 0, checked: null, right: 0, wrong: [] };
+}
+function renderSentCheck() {
+  if (!sdeck) buildSDeck();
+  const n = sdeck.items.length; let body;
+  if (!n) {
+    body = `<div class="empty">${S.s.scope === 'u' ? '여기서 틀린 문장이 없어요.<br>범위를 ‘전체’로 바꿔서 시작해 보세요.' : '이 분류의 문장을 모두 한 번씩 풀었어요.<br>범위를 ‘전체’나 ‘틀린 것만’으로 바꿔 보세요.'}</div>`;
+  } else if (sdeck.i >= n) {
+    const w = sdeck.wrong;
+    body = `<div class="done"><h2>다 풀었어요!</h2>
+      <p class="score"><b class="sk">${sdeck.right}</b> 맞힘 &nbsp;·&nbsp; <b class="su">${w.length}</b> 틀림</p>
+      ${w.length ? `<div class="vmiss">${w.map(s => `<div><b>${esc(s.ans + s.p)}</b>${esc(s.ko)}</div>`).join('')}</div>` : '<p class="hint">전부 맞혔어요. 다른 분류도 풀어 보세요.</p>'}
+      <div class="acts">${w.length ? `<button class="btn bad" data-act="retry">틀린 ${w.length}문제 다시</button>` : ''}<button class="btn primary" data-act="restart">처음부터 다시</button></div></div>`;
+  } else {
+    const it = sdeck.items[sdeck.i], s = it.s, done = sdeck.checked !== null, full = it.placed.length === s.chunks.length;
+    const mine = it.placed.map(i => s.chunks[i]).join('');
+    body = `<div class="prog"><span>${GROUPS[s.g]} · ${esc(byId[s.gid].t)}</span><span class="num">${sdeck.i + 1} / ${n}</span></div>
+      <div class="track"><i style="width:${sdeck.i / n * 100}%"></i></div>
+      <div class="qc">
+        <span class="tag">단어를 눌러 바른 순서로 배열하세요</span>
+        ${S.s.hint ? `<p class="hintko">${esc(s.ko)}</p>` : ''}
+        <div class="slots${done ? (sdeck.checked ? ' ok' : ' no') : ''}">${it.placed.length
+          ? it.placed.map((ci, pos) => `<button class="tile in" data-unplace="${pos}" ${done ? 'disabled' : ''}>${esc(s.chunks[ci])}</button>`).join('') + (full ? `<span class="pn">${s.p}</span>` : '')
+          : '<span class="ph">여기에 단어가 차례로 들어가요. 넣은 단어를 누르면 빠져요.</span>'}</div>
+        <div class="bank" ${done ? 'hidden' : ''}>${it.bank.map(ci => `<button class="tile${it.placed.includes(ci) ? ' used' : ''}" data-place="${ci}" ${done || it.placed.includes(ci) ? 'disabled' : ''}>${esc(s.chunks[ci])}</button>`).join('')}</div>
+        ${done ? `<div class="expl">
+            <div>${sdeck.checked ? '<b class="k">정답!</b>' : '<b class="u">아쉬워요.</b> 내 답: <span class="zhs mine">' + esc(mine + s.p) + '</span>'}</div>
+            <div>정답: <span class="zhs">${esc(s.ans + s.p)}</span></div>
+            ${s.ok.length > 1 ? `<div class="hint">이렇게 써도 정답이에요: <span class="zhs">${s.ok.slice(1).map(a => esc(a + s.p)).join(' / ')}</span></div>` : ''}
+            <div class="hint">${esc(s.ko)}</div>
+            <button class="lnk" data-go-card="${s.gid}">${esc(byId[s.gid].t)} 카드 보기</button>
+          </div>` : ''}
+      </div>
+      ${done ? '<button class="btn primary" data-act="snext">다음 문제</button>'
+        : `<div class="acts"><button class="btn ghost" data-act="sclear" ${it.placed.length ? '' : 'disabled'}>다시 놓기</button><button class="btn primary" data-act="scheck" ${full ? '' : 'disabled'}>확인</button></div>`}
+      <div class="keys">시험에서는 문장 끝 부호(。？)도 직접 써야 해요</div>`;
+  }
+  main.innerHTML = `<div class="check">
+    <div class="opts">
+      <div class="opt"><span>뜻 힌트</span><div class="seg sm">${segBtn('s', 'hint', true, '보기')}${segBtn('s', 'hint', false, '숨기기')}</div></div>
+      <div class="opt"><span>범위</span><div class="seg sm">${segBtn('s', 'scope', 'all', '전체')}${segBtn('s', 'scope', 'u', '틀린 것만')}${segBtn('s', 'scope', 'n', '안 푼 것')}</div></div>
+      <div class="opt"><span>순서</span><div class="seg sm">${segBtn('s', 'shuffle', '1', '섞기')}${segBtn('s', 'shuffle', '0', '차례대로')}</div></div>
+    </div>
+    ${body}
+    <div class="foot"><span>기록은 이 기기, 이 브라우저에만 저장돼요.</span><button class="link" data-act="reset">${resetArmed ? '한 번 더 누르면 배열 기록이 모두 지워져요' : '배열 기록 지우기'}</button></div>
+  </div>`;
+}
+function sCheck() {
+  const it = sdeck.items[sdeck.i];
+  if (sdeck.checked !== null || it.placed.length !== it.s.chunks.length) return;
+  const ok = it.s.ok.includes(it.placed.map(i => it.s.chunks[i]).join(''));
+  sdeck.checked = ok;
+  S.sres[it.s.id] = ok ? 'k' : 'u';
+  if (ok) sdeck.right++; else sdeck.wrong.push(it.s);
+  save(); renderTop(); renderSentCheck();
+}
+function sNext() { if (sdeck && sdeck.checked !== null) { sdeck.i++; sdeck.checked = null; renderSentCheck(); window.scrollTo(0, 0); } }
+
+/* ---------- render ---------- */
+function render() {
+  renderTop();
+  if (view === 'home') renderHome();
+  else if (view === 'vocab') S.v.mode === 'study' ? renderVocabStudy() : renderVocabCheck();
+  else if (view === 'grammar') S.g.mode === 'study' ? renderGrammarStudy() : renderGrammarCheck();
+  else S.s.mode === 'study' ? renderSentStudy() : renderSentCheck();
+}
+function openCard(id) {
+  S.g.mode = 'study'; S.g.grp = 'all'; save();
+  go('grammar', () => {
+    const el = document.getElementById('g-' + id);
+    if (el) { el.scrollIntoView({ block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  });
+}
+
+/* ---------- events ---------- */
+document.querySelector('header.top').addEventListener('click', e => {
+  const vb = e.target.closest('[data-view]');
+  if (vb) { go(vb.dataset.view); return; }
+  const mb = e.target.closest('[data-mode]');
+  if (mb) { S[secOf(view)].mode = mb.dataset.mode; resetArmed = false; save(); render(); window.scrollTo(0, 0); return; }
+  const sb = e.target.closest('[data-sgrp]');
+  if (sb) { S.s.grp = sb.dataset.sgrp === 'all' ? 'all' : +sb.dataset.sgrp; sdeck = null; save(); render(); window.scrollTo(0, 0); return; }
+  const tb = e.target.closest('[data-topic]');
+  if (tb) { S.v.topic = tb.dataset.topic === 'all' ? 'all' : +tb.dataset.topic; vdeck = null; save(); render(); window.scrollTo(0, 0); return; }
+  const gb = e.target.closest('[data-grp]');
+  if (gb) { S.g.grp = gb.dataset.grp === 'all' ? 'all' : +gb.dataset.grp; gdeck = null; save(); render(); window.scrollTo(0, 0); }
+});
+main.addEventListener('change', e => {
+  if (e.target.id === 'start' && e.target.value) { S.start = e.target.value; save(); renderHome(); }
+});
+main.addEventListener('click', e => {
+  const t = e.target, at = s => t.closest(s);
+  let el;
+  if ((el = at('[data-view]'))) { go(el.dataset.view); return; }
+  if ((el = at('[data-go-topic]'))) { S.v.topic = +el.dataset.goTopic; S.v.mode = 'study'; vdeck = null; save(); go('vocab'); return; }
+  if ((el = at('[data-go-card]'))) { openCard(el.dataset.goCard); return; }
+  if ((el = at('[data-review]'))) {
+    if (el.dataset.review === 'v') { S.v.topic = 'all'; S.v.mode = 'check'; S.v.scope = 'u'; vdeck = null; save(); go('vocab'); }
+    else if (el.dataset.review === 'g') { S.g.grp = 'all'; S.g.mode = 'check'; S.g.scope = 'u'; gdeck = null; save(); go('grammar'); }
+    else { S.s.grp = 'all'; S.s.mode = 'check'; S.s.scope = 'u'; sdeck = null; save(); go('sentence'); }
+    return;
+  }
+  if ((el = at('[data-full]'))) {
+    if (el.dataset.full === 'v') { S.v.topic = 'all'; S.v.mode = 'check'; S.v.scope = 'all'; S.v.shuffle = true; vdeck = null; save(); go('vocab'); }
+    else if (el.dataset.full === 'g') { S.g.grp = 'all'; S.g.mode = 'check'; S.g.scope = 'all'; gdeck = null; save(); go('grammar'); }
+    else { S.s.grp = 'all'; S.s.mode = 'check'; S.s.scope = 'all'; sdeck = null; save(); go('sentence'); }
+    return;
+  }
+  if ((el = at('[data-sweek]'))) {
+    const P = PLAN[+el.dataset.sweek];
+    S.s.grp = 'all'; S.s.mode = 'check'; save();
+    buildSDeck(SENTS.filter(s => P.gc.includes(s.gid)));
+    go('sentence'); return;
+  }
+  if ((el = at('[data-say]'))) { e.stopPropagation(); speak(el.dataset.say); return; }
+  const sec = secOf(view);
+  if ((el = at('[data-tog]'))) { S[sec][el.dataset.tog] = !S[sec][el.dataset.tog]; save(); render(); return; }
+  if ((el = at('.w')) || (el = at('.sc'))) { el.classList.toggle('peek'); return; }
+  if ((el = at('[data-opt]'))) {
+    const k = el.dataset.opt, v = el.dataset.val;
+    S[sec][k] = k === 'shuffle' ? v === '1' : k === 'hint' ? v === 'true' : v;
+    if (k !== 'hint') { if (sec === 'v') vdeck = null; else if (sec === 'g') gdeck = null; else sdeck = null; }
+    save(); render(); return;
+  }
+  if ((el = at('[data-place]'))) { const it = sdeck.items[sdeck.i]; const ci = +el.dataset.place; if (!it.placed.includes(ci)) it.placed.push(ci); renderSentCheck(); return; }
+  if ((el = at('[data-unplace]'))) { sdeck.items[sdeck.i].placed.splice(+el.dataset.unplace, 1); renderSentCheck(); return; }
+  if ((el = at('[data-ans]'))) { vAnswer(el.dataset.ans); return; }
+  if ((el = at('[data-pick]'))) { gPick(+el.dataset.pick); return; }
+  if ((el = at('[data-act]'))) {
+    const a = el.dataset.act;
+    if (a === 'reveal') vReveal();
+    if (a === 'next') gNext();
+    if (a === 'scheck') sCheck();
+    if (a === 'snext') sNext();
+    if (a === 'sclear') { sdeck.items[sdeck.i].placed = []; renderSentCheck(); }
+    if (a === 'retry') { if (sec === 'v') buildVDeck(vdeck.unknown); else if (sec === 'g') buildGDeck(gdeck.wrong); else buildSDeck(sdeck.wrong); render(); window.scrollTo(0, 0); }
+    if (a === 'restart') { if (sec === 'v') vdeck = null; else if (sec === 'g') gdeck = null; else sdeck = null; render(); window.scrollTo(0, 0); }
+    if (a === 'reset') {
+      if (!resetArmed) { resetArmed = true; render(); return; }
+      if (sec === 'v') { S.marks = {}; vdeck = null; } else if (sec === 'g') { S.res = {}; gdeck = null; } else { S.sres = {}; sdeck = null; }
+      resetArmed = false; save(); render();
+    }
+    return;
+  }
+  if (at('#fc')) vReveal();
+});
+document.addEventListener('keydown', e => {
+  if (view === 'vocab' && S.v.mode === 'check' && vdeck && vdeck.i < vdeck.items.length) {
+    if (e.key === ' ' || (e.key === 'Enter' && !(e.target.closest && e.target.closest('button')))) { e.preventDefault(); vReveal(); }
+    else if (vdeck.revealed && e.key === 'ArrowLeft') vAnswer('u');
+    else if (vdeck.revealed && e.key === 'ArrowRight') vAnswer('k');
+  } else if (view === 'grammar' && S.g.mode === 'check' && gdeck && gdeck.i < gdeck.items.length) {
+    if (['1', '2', '3'].includes(e.key) && gdeck.picked === null) gPick(gdeck.items[gdeck.i].order[+e.key - 1]);
+    else if (e.key === 'Enter' && gdeck.picked !== null) { e.preventDefault(); gNext(); }
+  } else if (view === 'sentence' && S.s.mode === 'check' && sdeck && sdeck.i < sdeck.items.length && e.key === 'Enter') {
+    e.preventDefault(); sdeck.checked === null ? sCheck() : sNext();
+  }
+});
+
+render();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>

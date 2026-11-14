@@ -1,0 +1,16 @@
+{
+  "name": "HSK 3급 공부방",
+  "short_name": "HSK 3급",
+  "description": "HSK 3급 단어·문법·문장 배열을 공부하고 확인하는 앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF2EF",
+  "theme_color": "#EEF2EF",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
