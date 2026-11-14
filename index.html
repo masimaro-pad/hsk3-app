@@ -274,6 +274,12 @@ details.plan summary{cursor:pointer;font-size:14px;color:var(--accent);font-weig
 .mw .d{font-size:14px}
 .mw .mex{font-family:var(--font-han);font-size:17px;color:var(--muted)}
 .cp{color:var(--accent);font-size:14px;margin-top:-6px}
+.zrows{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.zr{display:grid;grid-template-columns:auto auto 1fr;grid-template-areas:"c p m" "c e e";column-gap:10px;align-items:baseline;padding-block:8px;border-bottom:1px solid var(--line)}
+.zr .zc{grid-area:c;font-family:var(--font-han);font-size:30px;font-weight:700;line-height:1.1;align-self:center;min-width:1.2em;text-align:center}
+.zr .zp{grid-area:p;color:var(--accent);font-size:14px;font-weight:500}
+.zr .zm{grid-area:m;font-size:14px;min-width:0}
+.zr .ze{grid-area:e;font-family:var(--font-han);font-size:16px;color:var(--muted)}
 .tipline{color:var(--muted);font-size:13.5px;border-top:1px dashed var(--line);padding-top:10px}
 .xlist{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 14px}
 .xrow{position:relative;display:flex;align-items:center;gap:10px;padding-block:12px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;-webkit-user-select:none}
@@ -304,6 +310,7 @@ details.plan summary{cursor:pointer;font-size:14px;color:var(--accent);font-weig
         <button data-view="measure">양사</button>
         <button data-view="conj">접속사</button>
         <button data-view="situ">표현</button>
+        <button data-view="conf">글자</button>
       </div>
     </div>
     <div class="subbar" id="subbar">
@@ -1281,12 +1288,13 @@ function distribute(units, from, to, put) {
 }
 function makePlan(W) {
   const R = W <= 3 ? 1 : Math.max(1, Math.round(W * 0.2)), L = W - R;
-  const P = Array.from({ length: W }, () => ({ vt: [], gc: [], mg: [], cg: [], xg: [] }));
+  const P = Array.from({ length: W }, () => ({ vt: [], gc: [], mg: [], cg: [], xg: [], zg: [] }));
   distribute(TOPICS.map((t, i) => ({ w: t.words.length, v: i })), 0, L, (w, v) => P[w].vt.push(v));
   distribute(CARDS.map(c => ({ w: 1, v: c.id })), 0, L, (w, v) => P[w].gc.push(v));
   distribute(MGROUPS.map((_, i) => ({ w: MEASURES.filter(m => m.g === i).length, v: i })), Math.floor(L * 0.3), L, (w, v) => P[w].mg.push(v));
   distribute(SITUS.map((x, i) => ({ w: x.items.length, v: i })), Math.floor(L * 0.4), L, (w, v) => P[w].xg.push(v));
   distribute(CGROUPS.map((_, i) => ({ w: CONJS.filter(c => c.g === i).length, v: i })), Math.floor(L * 0.5), L, (w, v) => P[w].cg.push(v));
+  distribute(ZGROUPS.map((_, i) => ({ w: CONFS.filter(z => z.g === i).length, v: i })), Math.floor(L * 0.2), L, (w, v) => P[w].zg.push(v));
   return { P, W, L, R };
 }
 function buildPlan() { const r = makePlan(weeksFor(S.plan, S.start)); PLAN = r.P; WEEKS = r.W; LEARN = r.L; return r; }
@@ -1308,7 +1316,8 @@ function load() {
     res: s.res || {},
     sres: s.sres || {},
     s: Object.assign({ mode: 'check', grp: 'all', hideA: true, hint: true, scope: 'all', shuffle: true }, s.s),
-    mc: Object.assign({ m: {}, c: {}, x: {} }, s.mc),
+    mc: Object.assign({ m: {}, c: {}, x: {}, z: {} }, s.mc),
+    z: Object.assign({ mode: 'study', grp: 'all', scope: 'all', shuffle: true }, s.z),
     m: Object.assign({ mode: 'study', grp: 'all', scope: 'all', shuffle: true }, s.m),
     c: Object.assign({ mode: 'study', grp: 'all', scope: 'all', shuffle: true }, s.c),
     x: Object.assign({ mode: 'study', grp: 'all', hideP: false, hideM: false, scope: 'all', shuffle: true }, s.x),
@@ -1320,7 +1329,7 @@ let S = load();
 if (S.v.topic !== 'all' && !TOPICS[S.v.topic]) S.v.topic = 0;
 if (S.g.grp !== 'all' && !GROUPS[S.g.grp]) S.g.grp = 'all';
 if (S.s.grp !== 'all' && !SGROUPS.includes(S.s.grp)) S.s.grp = 'all';
-['m', 'c', 'x'].forEach(k => { if (S[k].grp !== 'all' && typeof S[k].grp !== 'number') S[k].grp = 'all'; });
+['m', 'c', 'x', 'z'].forEach(k => { if (S[k].grp !== 'all' && typeof S[k].grp !== 'number') S[k].grp = 'all'; });
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 save();
 let pdraftInit = !S.plan.set;
@@ -1353,8 +1362,8 @@ function weekIndex() {
 }
 
 /* ---------- routing ---------- */
-const VIEWS = ['home', 'vocab', 'grammar', 'sentence', 'measure', 'conj', 'situ'];
-const secOf = v => ({ vocab: 'v', grammar: 'g', sentence: 's', measure: 'm', conj: 'c', situ: 'x' })[v] || 's';
+const VIEWS = ['home', 'vocab', 'grammar', 'sentence', 'measure', 'conj', 'situ', 'conf'];
+const secOf = v => ({ vocab: 'v', grammar: 'g', sentence: 's', measure: 'm', conj: 'c', situ: 'x', conf: 'z' })[v] || 's';
 let view = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
 function go(v, after) {
   view = v; resetArmed = false;
@@ -1451,11 +1460,12 @@ function renderHome() {
     if (P.mg.length) t += '<div class="sub">양사</div>' + P.mg.map(g => grpRow('m', g, MGROUPS[g])).join('');
     if (P.cg.length) t += '<div class="sub">접속사</div>' + P.cg.map(g => grpRow('c', g, CGROUPS[g])).join('');
     if (P.xg.length) t += '<div class="sub">상황별 표현</div>' + P.xg.map(g => grpRow('x', g, SITUS[g].name)).join('');
+    if (P.zg.length) t += '<div class="sub">헷갈리는 글자</div>' + P.zg.map(g => grpRow('z', g, ZGROUPS[g])).join('');
     if (wi >= LEARN) t += reviewTodo();
     todo = t;
   }
   const weekbar = Array.from({ length: WEEKS }, (_, i) => `<i class="${i < wi ? 'past' : i === wi ? 'now' : ''}"></i>`).join('');
-  const others = P => [P.mg.map(g => '양사 ' + MGROUPS[g]), P.cg.map(g => '접속사 ' + CGROUPS[g]), P.xg.map(g => '표현 ' + SITUS[g].name)].flat().join(', ');
+  const others = P => [P.mg.map(g => '양사 ' + MGROUPS[g]), P.cg.map(g => '접속사 ' + CGROUPS[g]), P.xg.map(g => '표현 ' + SITUS[g].name), P.zg.map(g => '글자 ' + ZGROUPS[g])].flat().join(', ');
   const planRows = PLAN.map((P, i) => `<tr class="${i === wi ? 'now' : ''}"><th>${i + 1}주<br><small>${md(addDays(S.start, i * 7))}</small></th><td>${i >= LEARN ? '실전 복습' : (P.vt.length ? P.vt.map(t => TOPICS[t].name).join(', ') : '몰라요 단어 복습')}</td><td class="zhs">${i >= LEARN ? '전체 문제' : P.gc.map(id => esc(byId[id].t)).join(' · ')}</td><td>${i >= LEARN ? '틀린 것 다시' : others(P)}</td></tr>`).join('');
   const examLine = S.plan.mode === 'exam' && S.plan.exam ? (() => { const dd = Math.ceil((new Date(S.plan.exam + 'T00:00') - new Date(todayStr() + 'T00:00')) / 86400000); return `<span>시험 ${md(addDays(S.plan.exam, 0))} · <b>${dd > 0 ? 'D-' + dd : dd === 0 ? 'D-DAY' : '시험 끝'}</b></span>`; })() : '';
   const weekPanels = (!S.plan.set || pdraft) ? setupPanel() : `
@@ -1492,11 +1502,11 @@ function renderHome() {
       </div>
     </div>
     <div class="panel">
-      <h2>카테고리<small>준비 중인 것은 하나씩 추가돼요</small></h2>
+      <h2>카테고리</h2>
       <div class="cats">
         <button class="cat on" data-view="vocab"><b>단어</b><span>주제별 ${ALL.length}개</span></button>
         <button class="cat on" data-view="grammar"><b>문법</b><span>${CARDS.length}개 카드 · ${QTOTAL}문제</span></button>
-        <div class="cat soon"><b>헷갈리는 글자</b><span>준비 중</span></div>
+        <button class="cat on" data-view="conf"><b>헷갈리는 글자</b><span>${CONFS.length}쌍 · ${MCALL.z.length}문제</span></button>
         <button class="cat on" data-view="sentence"><b>문장 배열</b><span>쓰기 1부분 · ${SENTS.length}문제</span></button>
         <button class="cat on" data-view="measure"><b>양사</b><span>${MEASURES.length}개 · ${MCALL.m.length}문제</span></button>
         <button class="cat on" data-view="conj"><b>접속사</b><span>${CONJS.length}개 · ${MCALL.c.length}문제</span></button>
@@ -1982,18 +1992,158 @@ const SITUS = [
   ['没关系，下次再说吧。','Méi guānxi, xià cì zài shuō ba.','괜찮아, 다음에 다시 얘기하자.'] ] }
 ];
 
-const MCSEC = ['m', 'c', 'x'];
-const SEC_VIEW = { m: 'measure', c: 'conj', x: 'situ' };
-const MC_NAME = { m: '양사', c: '접속사', x: '상황별 표현' };
-const MC_GROUPS = { m: MGROUPS, c: CGROUPS, x: SITUS.map(s => s.name) };
+/* ---------- 헷갈리는 글자 ---------- */
+/* r: [글자, 병음, 뜻, 예시], q: [문제, 보기(첫 번째가 정답), 해설] */
+const ZGROUPS = ['소리가 같은 글자', '모양이 비슷한 글자', '발음이 두 개인 글자', '뜻이 헷갈리는 짝'];
+const CONFS = [
+{ id:'zai', g:0, t:'在 / 再', p:'zài', d:'IBT에서 zai를 치면 둘 다 떠요. 장소·진행은 在, "다시"는 再.',
+  r:[['在','zài','~에 있다, ~하고 있다','我在家。'],['再','zài','(앞으로) 다시','明天再来吧。']],
+  q:[['我（ ）图书馆看书。',['在','再','才'],'장소(~에서) → 在.'],['请你（ ）说一遍。',['再','在','又'],'앞으로 다시 → 再.']] },
+{ id:'de', g:0, t:'的 / 得 / 地', p:'de', d:'명사 앞은 的, 동사 뒤 정도는 得, 동사 앞 "~하게"는 地.',
+  r:[['的','de','~의, ~한 (명사 앞)','我的书 · 漂亮的衣服'],['得','de','정도 (동사 뒤)','跑得很快'],['地','de','~하게 (동사 앞)','认真地学习']],
+  q:[['这是妈妈（ ）手机。',['的','得','地'],'명사(手机) 앞 → 的.'],['他汉语说（ ）很好。',['得','的','地'],'동사(说) 뒤 정도 → 得.']] },
+{ id:'zuo', g:0, t:'做 / 作 / 坐', p:'zuò', d:'"하다, 만들다"는 做, 단어 속 作(工作, 作业), "앉다, 타다"는 坐.',
+  r:[['做','zuò','하다, 만들다','做饭 · 做作业'],['作','zuò','工作, 作业 같은 단어 속','工作 · 作业'],['坐','zuò','앉다, (차를) 타다','坐飞机']],
+  q:[['妈妈正在（ ）饭呢。',['做','作','坐'],'밥을 하다 → 做饭.'],['我们（ ）地铁去吧。',['坐','做','作'],'(교통수단을) 타다 → 坐.']] },
+{ id:'ta', g:0, t:'他 / 她 / 它', p:'tā', d:'남자는 他(亻), 여자는 她(女), 동물·물건은 它.',
+  r:[['他','tā','그 (남자)','他是我哥哥。'],['她','tā','그녀 (여자)','她是我姐姐。'],['它','tā','그것 (동물·물건)','我的猫很可爱，它叫小白。']],
+  q:[['我妹妹很聪明，（ ）每天都学习。',['她','他','它'],'여동생 → 她.'],['我有一只狗，（ ）很可爱。',['它','他','她'],'동물 → 它.']] },
+{ id:'you', g:0, t:'有 / 又', p:'yǒu · yòu', d:'성조는 다르지만 IBT에서 you를 치면 둘 다 떠요.',
+  r:[['有','yǒu','있다','我有一本书。'],['又','yòu','(이미) 또','他又迟到了。']],
+  q:[['你明天（ ）时间吗？',['有','又','也'],'"시간 있어?" → 有.'],['他昨天来了，今天（ ）来了。',['又','有','再'],'이미 또 → 又.']] },
+{ id:'hui', g:0, t:'回 / 会', p:'huí · huì', d:'"돌아가다"는 回, "할 줄 알다, ~할 것이다"는 会.',
+  r:[['回','huí','돌아가다','回家'],['会','huì','~할 줄 알다, ~할 것이다','会说汉语']],
+  q:[['我下班以后就（ ）家。',['回','会','还'],'집에 돌아가다 → 回家.'],['你（ ）游泳吗？',['会','回','还'],'배워서 할 줄 아는지 → 会.']] },
+{ id:'ji', g:0, t:'机 / 鸡', p:'jī', d:'기계는 机(木), 닭은 鸡(鸟).',
+  r:[['机','jī','기계 (手机, 飞机)','手机 · 飞机 · 机场'],['鸡','jī','닭','鸡蛋']],
+  q:[['我的手（ ）在哪儿？',['机','鸡','几'],'휴대폰 → 手机.'],['早上我吃了两个（ ）蛋。',['鸡','机','几'],'달걀 → 鸡蛋.']] },
+{ id:'qi', g:0, t:'期 / 起 / 气', p:'qī · qǐ · qì', d:'IBT에서 qi를 치면 셋 다 떠요. 단어로 외우면 쉬워요.',
+  r:[['期','qī','기간 (星期)','星期六'],['起','qǐ','일어나다 (起床, 一起)','起床 · 一起'],['气','qì','기운 (天气, 生气)','天气 · 生气']],
+  q:[['今天天（ ）很好。',['气','期','起'],'날씨 → 天气.'],['我们一（ ）去吃饭吧。',['起','期','气'],'함께 → 一起.']] },
+{ id:'gong', g:0, t:'公 / 工', p:'gōng', d:'公司·公园·公共汽车는 公, 工作는 工.',
+  r:[['公','gōng','공공 (公司, 公园)','公司 · 公园'],['工','gōng','일 (工作)','工作']],
+  q:[['他在一家（ ）司上班。',['公','工','共'],'회사 → 公司.'],['你做什么（ ）作？',['工','公','共'],'일 → 工作.']] },
+{ id:'ti', g:0, t:'题 / 体', p:'tí · tǐ', d:'문제는 题(页), 몸은 体(亻).',
+  r:[['题','tí','문제 (问题)','问题'],['体','tǐ','몸 (身体, 体育)','身体 · 体育']],
+  q:[['我有一个问（ ）。',['题','体','提'],'질문 → 问题.'],['你身（ ）怎么样？',['体','题','提'],'몸 → 身体.']] },
+{ id:'he2', g:0, t:'和 / 喝', p:'hé · hē', d:'"~와"는 和, "마시다"는 喝(口 입).',
+  r:[['和','hé','~와(과)','我和你'],['喝','hē','마시다','喝茶']],
+  q:[['你想（ ）什么？',['喝','和','河'],'마시다 → 喝.'],['我（ ）妈妈一起去。',['和','喝','河'],'~와 → 和.']] },
+{ id:'jin2', g:0, t:'进 / 近', p:'jìn', d:'"들어가다"는 进(井), "가깝다"는 近(斤).',
+  r:[['进','jìn','들어가다','请进'],['近','jìn','가깝다','很近']],
+  q:[['外面很冷，快（ ）来吧。',['进','近','今'],'들어오다 → 进来.'],['我家离学校很（ ）。',['近','进','今'],'가깝다 → 近.']] },
+{ id:'shi2', g:0, t:'是 / 事 / 试 / 时', p:'shì · shí', d:'IBT에서 shi를 치면 넷 다 떠요. 단어째 입력하면 실수가 줄어요.',
+  r:[['是','shì','~이다','我是学生。'],['事','shì','일','有事'],['试','shì','시험, 시도하다','考试 · 试试'],['时','shí','때 (时间, 时候)','时间']],
+  q:[['明天有考（ ）。',['试','事','时'],'시험 → 考试.'],['对不起，我有点儿（ ），不能去了。',['事','试','时'],'일이 있다 → 有事.']] },
+
+{ id:'yi', g:1, t:'已 / 己', p:'yǐ · jǐ', d:'已는 위가 조금 열려 있고, 己는 완전히 열려 있어요.',
+  r:[['已','yǐ','이미 (已经)','已经'],['己','jǐ','자기 (自己)','自己']],
+  q:[['我（ ）经吃饭了。',['已','己','以'],'이미 → 已经.'],['你自（ ）去吧。',['己','已','几'],'스스로 → 自己.']] },
+{ id:'mai', g:1, t:'买 / 卖', p:'mǎi · mài', d:'卖는 买 위에 十이 있어요. "팔 물건이 더 많다"로 기억해요.',
+  r:[['买','mǎi','사다','买东西'],['卖','mài','팔다','卖水果']],
+  q:[['我去超市（ ）点儿水果。',['买','卖','实'],'사러 가다 → 买.'],['这个商店（ ）水果和饮料。',['卖','买','实'],'가게가 팔다 → 卖.']] },
+{ id:'wu', g:1, t:'午 / 牛', p:'wǔ · niú', d:'牛는 세로획이 위로 뚫고 나와요.',
+  r:[['午','wǔ','낮 (中午, 下午)','下午'],['牛','niú','소 (牛奶)','牛奶']],
+  q:[['我下（ ）三点有课。',['午','牛','年'],'오후 → 下午.'],['我每天早上喝（ ）奶。',['牛','午','年'],'우유 → 牛奶.']] },
+{ id:'ren', g:1, t:'人 / 入 / 八', p:'rén · rù · bā', d:'人은 왼쪽 획이 길고, 入은 오른쪽 획이 길어요. 八은 두 획이 떨어져 있어요.',
+  r:[['人','rén','사람','中国人'],['入','rù','들어가다 (入口)','入口'],['八','bā','8','八点']],
+  q:[['他是中国（ ）。',['人','入','八'],'사람 → 人.'],['现在（ ）点半。',['八','人','入'],'여덟 시 → 八点.']] },
+{ id:'men', g:1, t:'门 / 问 / 间', p:'mén · wèn · jiān', d:'门 안에 口(입)가 있으면 묻다 问, 日(해)이 있으면 사이 间.',
+  r:[['门','mén','문','开门'],['问','wèn','묻다','问题'],['间','jiān','사이, 칸','时间 · 房间']],
+  q:[['我想（ ）你一个问题。',['问','间','门'],'묻다 → 问.'],['你有时（ ）吗？',['间','问','门'],'시간 → 时间.']] },
+{ id:'xiu', g:1, t:'休 / 体', p:'xiū · tǐ', d:'休는 사람(亻)이 나무(木)에 기대 쉬는 모양, 体는 亻+本.',
+  r:[['休','xiū','쉬다 (休息)','休息'],['体','tǐ','몸 (身体)','身体']],
+  q:[['你累了，（ ）息一下吧。',['休','体','本'],'쉬다 → 休息.'],['你身（ ）好吗？',['体','休','本'],'몸 → 身体.']] },
+{ id:'qing', g:1, t:'请 / 情 / 晴 / 清', p:'qǐng · qíng · qīng', d:'왼쪽 부수로 구별해요. 讠말 → 请, 忄마음 → 情, 日해 → 晴, 氵물 → 清.',
+  r:[['请','qǐng','청하다, 부탁하다','请进'],['情','qíng','마음, 일','事情 · 热情'],['晴','qíng','(날씨가) 맑다','晴天'],['清','qīng','맑다, 분명하다','清楚']],
+  q:[['今天天气很好，是（ ）天。',['晴','情','请'],'해(日)가 나는 맑은 날 → 晴.'],['（ ）你帮我一下。',['请','情','清'],'부탁하다 → 请.']] },
+{ id:'zhao', g:1, t:'我 / 找', p:'wǒ · zhǎo', d:'找는 왼쪽에 손(扌)이 있어요. 손으로 찾아요.',
+  r:[['我','wǒ','나','我们'],['找','zhǎo','찾다','找东西']],
+  q:[['你在（ ）什么？',['找','我','把'],'찾다 → 找.'],['（ ）们一起走吧。',['我','找','把'],'우리 → 我们.']] },
+{ id:'zhu', g:1, t:'住 / 往 / 注', p:'zhù · wǎng', d:'亻사람이 사는 곳 住, 彳길을 가는 방향 往, 氵물을 붓는 注.',
+  r:[['住','zhù','살다, 묵다','住在北京'],['往','wǎng','~쪽으로','往前走'],['注','zhù','주의하다 (注意)','注意']],
+  q:[['你（ ）在哪儿？',['住','往','注'],'살다 → 住.'],['一直（ ）前走。',['往','住','注'],'~쪽으로 → 往.']] },
+{ id:'da', g:1, t:'大 / 太 / 天', p:'dà · tài · tiān', d:'大에 점 하나를 찍으면 太, 위에 가로획을 더하면 天.',
+  r:[['大','dà','크다','很大'],['太','tài','너무','太好了'],['天','tiān','하늘, 날','今天']],
+  q:[['这件衣服（ ）贵了。',['太','大','天'],'너무 → 太.'],['今（ ）星期几？',['天','大','太'],'오늘 → 今天.']] },
+{ id:'hen', g:1, t:'很 / 银 / 跟', p:'hěn · yín · gēn', d:'오른쪽은 모두 艮. 왼쪽이 彳이면 很, 钅(쇠)면 银, 足(발)이면 跟.',
+  r:[['很','hěn','매우','很好'],['银','yín','은 (银行)','银行'],['跟','gēn','~와(과)','跟我来']],
+  q:[['附近有（ ）行吗？',['银','很','跟'],'은행 → 银行.'],['你（ ）谁一起去？',['跟','很','银'],'~와 → 跟.']] },
+
+{ id:'huan', g:2, t:'还', p:'hái / huán', d:'"아직, 또"는 hái, "돌려주다"는 huán.',
+  r:[['还','hái','아직, 또','他还没来。'],['还','huán','돌려주다','还书']],
+  q:[['"我去图书馆还书。"에서 还의 발음은?',['huán','hái','hé'],'돌려주다 → huán.'],['"他还没起床。"에서 还의 발음은?',['hái','huán','hé'],'아직 → hái.']] },
+{ id:'chang', g:2, t:'长', p:'cháng / zhǎng', d:'"길다"는 cháng, "자라다, 생기다"는 zhǎng.',
+  r:[['长','cháng','길다','很长'],['长','zhǎng','자라다, 생기다','长得很高']],
+  q:[['"这条路很长。"에서 长의 발음은?',['cháng','zhǎng','chǎng'],'길다 → cháng.'],['"她长得很漂亮。"에서 长의 발음은?',['zhǎng','cháng','chǎng'],'생기다 → zhǎng.']] },
+{ id:'zhi2', g:2, t:'只', p:'zhǐ / zhī', d:'"단지, 오직"은 zhǐ, 동물을 세는 양사는 zhī.',
+  r:[['只','zhǐ','단지, 오직','只有一个'],['只','zhī','마리 (양사)','一只猫']],
+  q:[['"我只有一个妹妹。"에서 只의 발음은?',['zhǐ','zhī','zì'],'단지 → zhǐ.'],['"我家有一只猫。"에서 只의 발음은?',['zhī','zhǐ','zì'],'마리 → zhī.']] },
+{ id:'jue', g:2, t:'觉', p:'jiào / jué', d:'睡觉(잠)는 jiào, 觉得(느끼다)는 jué.',
+  r:[['觉','jiào','잠 (睡觉)','睡觉'],['觉','jué','느끼다 (觉得)','觉得']],
+  q:[['"我想睡觉。"에서 觉의 발음은?',['jiào','jué','jiāo'],'睡觉 → shuìjiào.'],['"我觉得很好。"에서 觉의 발음은?',['jué','jiào','jiāo'],'觉得 → juéde.']] },
+{ id:'xing', g:2, t:'行', p:'xíng / háng', d:'自行车는 xíng, 银行은 háng.',
+  r:[['行','xíng','가다, 괜찮다','自行车 · 行李箱'],['行','háng','줄, 업종','银行']],
+  q:[['"银行"에서 行의 발음은?',['háng','xíng','hàng'],'银行 → yínháng.'],['"自行车"에서 行의 발음은?',['xíng','háng','hàng'],'自行车 → zìxíngchē.']] },
+{ id:'bian2', g:2, t:'便', p:'biàn / pián', d:'方便(편리하다)은 biàn, 便宜(싸다)는 pián.',
+  r:[['便','biàn','편리하다 (方便)','方便'],['便','pián','싸다 (便宜)','便宜']],
+  q:[['"这个很便宜。"에서 便의 발음은?',['pián','biàn','biān'],'便宜 → piányi.'],['"坐地铁很方便。"에서 便의 발음은?',['biàn','pián','biān'],'方便 → fāngbiàn.']] },
+{ id:'le2', g:2, t:'乐', p:'lè / yuè', d:'快乐(즐겁다)는 lè, 音乐(음악)는 yuè.',
+  r:[['乐','lè','즐겁다 (快乐)','快乐'],['乐','yuè','음악 (音乐)','音乐']],
+  q:[['"生日快乐！"에서 乐의 발음은?',['lè','yuè','lì'],'快乐 → kuàilè.'],['"我喜欢听音乐。"에서 乐의 발음은?',['yuè','lè','lì'],'音乐 → yīnyuè.']] },
+{ id:'hao', g:2, t:'好', p:'hǎo / hào', d:'"좋다"는 hǎo, 爱好(취미)는 hào.',
+  r:[['好','hǎo','좋다','很好 · 好吃'],['好','hào','좋아하다 (爱好)','爱好']],
+  q:[['"你的爱好是什么？"에서 好의 발음은?',['hào','hǎo','hōu'],'爱好 → àihào.'],['"这个菜很好吃。"에서 好의 발음은?',['hǎo','hào','hōu'],'好吃 → hǎochī.']] },
+{ id:'zhe2', g:2, t:'着', p:'zhe / zháo', d:'동사 뒤 지속(~해 있다)은 zhe, 着急(조급하다)는 zháo.',
+  r:[['着','zhe','~해 있다 (지속)','门开着'],['着','zháo','着急 (조급하다)','着急']],
+  q:[['"别着急。"에서 着의 발음은?',['zháo','zhe','zhuó'],'着急 → zháojí.'],['"门开着。"에서 着의 발음은?',['zhe','zháo','zhuó'],'지속을 나타내는 着 → zhe (경성).']] },
+
+{ id:'liang2', g:3, t:'二 / 两', p:'èr · liǎng', d:'숫자·순서는 二, 양사 앞에서 "두 개"는 两.',
+  r:[['二','èr','2 (숫자, 순서)','二月 · 第二'],['两','liǎng','두 (양사 앞)','两个人 · 两本书']],
+  q:[['我有（ ）个哥哥。',['两','二','双'],'양사(个) 앞 → 两.'],['今天是（ ）月十号。',['二','两','双'],'월·순서 → 二.']] },
+{ id:'renshi', g:3, t:'认识 / 知道', p:'rènshi · zhīdào', d:'사람을 알고 지내면 认识, 사실이나 정보를 알면 知道.',
+  r:[['认识','rènshi','(사람·글자를) 알다','我认识他。'],['知道','zhīdào','(사실·정보를) 알다','我知道他的名字。']],
+  q:[['很高兴（ ）你！',['认识','知道','了解'],'처음 만나 알게 됨 → 认识.'],['你（ ）他住在哪儿吗？',['知道','认识','会'],'정보를 알다 → 知道.']] },
+{ id:'dianr2', g:3, t:'有点儿 / 一点儿', p:'yǒudiǎnr · yìdiǎnr', d:'형용사 앞(불만)은 有点儿, 형용사 뒤나 명사 앞은 一点儿.',
+  r:[['有点儿','yǒudiǎnr','조금 (형용사 앞, 불만)','有点儿贵'],['一点儿','yìdiǎnr','조금 (형용사 뒤, 명사 앞)','便宜一点儿 · 喝一点儿水']],
+  q:[['这件衣服（ ）贵。',['有点儿','一点儿','一些'],'형용사(贵) 앞 → 有点儿.'],['能便宜（ ）吗？',['一点儿','有点儿','一下'],'형용사 뒤 → 一点儿.']] },
+{ id:'bang', g:3, t:'帮助 / 帮忙', p:'bāngzhù · bāngmáng', d:'帮助 뒤에는 사람이 올 수 있고, 帮忙 뒤에는 목적어가 오지 않아요.',
+  r:[['帮助','bāngzhù','돕다 (+사람)','帮助朋友'],['帮忙','bāngmáng','일을 돕다 (목적어 없음)','请你帮个忙']],
+  q:[['谢谢你（ ）我。',['帮助','帮忙','忙'],'뒤에 사람(我)이 오니 帮助.'],['明天你能来（ ）吗？',['帮忙','帮助','帮'],'목적어 없이 "도우러 오다" → 帮忙.']] },
+{ id:'kanjian', g:3, t:'看 / 看见', p:'kàn · kànjiàn', d:'看은 보는 동작, 看见은 눈에 들어온 결과(봤다)예요.',
+  r:[['看','kàn','보다 (동작)','看电视'],['看见','kànjiàn','보이다, 봤다 (결과)','我看见他了。']],
+  q:[['我每天晚上（ ）电视。',['看','看见','见面'],'보는 동작 → 看.'],['你（ ）我的手机了吗？',['看见','看','见面'],'봤는지 결과를 물으니 看见.']] },
+{ id:'xiao', g:3, t:'小 / 少', p:'xiǎo · shǎo', d:'크기가 작으면 小, 양이 적으면 少.',
+  r:[['小','xiǎo','작다 (크기)','小狗'],['少','shǎo','적다 (양)','人很少']],
+  q:[['今天公园里的人很（ ）。',['少','小','太'],'사람 수(양)가 적다 → 少.'],['这个房间太（ ）了。',['小','少','忙'],'방 크기가 작다 → 小.']] }
+];
+
+function renderConfStudy() {
+  main.innerHTML = `<div class="tools"><span class="hint">IBT에서는 병음을 치고 글자를 골라야 해요. 단어째 입력하면 실수가 줄어요.</span></div>` +
+    listOf('z').map(g => {
+      const its = CONFS.filter(z => z.g === g);
+      return `<section class="grp"><h2>${ZGROUPS[g]}<small>${its.length}개</small></h2><div class="cards">${its.map(z => `
+        <article class="g" id="z-${z.id}">
+          <div class="gh"><h3>${esc(z.t)}</h3><span class="sub">${esc(z.p)}</span>${mcPill('z', z.q.map((_, i) => z.id + '-' + i))}</div>
+          <div class="zrows">${z.r.map(r => `<div class="zr"><span class="zc">${esc(r[0])}</span><span class="zp">${esc(r[1])}</span><span class="zm">${esc(r[2])}</span><span class="ze">${esc(r[3])}</span></div>`).join('')}</div>
+          <p class="desc tipline">${esc(z.d)}</p>
+        </article>`).join('')}</div></section>`;
+    }).join('');
+}
+
+const MCSEC = ['m', 'c', 'x', 'z'];
+const SEC_VIEW = { m: 'measure', c: 'conj', x: 'situ', z: 'conf' };
+const MC_NAME = { m: '양사', c: '접속사', x: '상황별 표현', z: '헷갈리는 글자' };
+const MC_GROUPS = { m: MGROUPS, c: CGROUPS, x: SITUS.map(s => s.name), z: ZGROUPS };
 const MCALL = {
   m: MEASURES.flatMap(it => it.q.map((q, i) => ({ qid: it.id + '-' + i, g: it.g, ref: it.id, refLabel: it.h, stem: q[0], opts: q[1], expl: q[2] }))),
   c: CONJS.flatMap(it => it.q.map((q, i) => ({ qid: it.id + '-' + i, g: it.g, ref: it.id, refLabel: it.t, stem: q[0], opts: q[1], expl: q[2] }))),
-  x: SITUS.flatMap((sc, g) => sc.items.map((e, i) => ({ qid: 'x' + g + '-' + i, g, ref: null, stem: e[2], zh: e[0], py: e[1], expl: e[1] })))
+  x: SITUS.flatMap((sc, g) => sc.items.map((e, i) => ({ qid: 'x' + g + '-' + i, g, ref: null, stem: e[2], zh: e[0], py: e[1], expl: e[1] }))),
+  z: CONFS.flatMap(it => it.q.map((q, i) => ({ qid: it.id + '-' + i, g: it.g, ref: it.id, refLabel: it.t, stem: q[0], opts: q[1], expl: q[2] })))
 };
 const mcRight = sec => MCALL[sec].filter(q => S.mc[sec][q.qid] === 'k').length;
 const mcWrong = sec => MCALL[sec].filter(q => S.mc[sec][q.qid] === 'u').length;
-const mdeck = { m: null, c: null, x: null };
+const mdeck = { m: null, c: null, x: null, z: null };
 function mcPill(sec, ids) {
   const done = ids.filter(id => S.mc[sec][id]);
   if (!done.length) return '<span class="pill">안 풀었음</span>';
@@ -2174,6 +2324,7 @@ function render() {
   else if (view === 'sentence') S.s.mode === 'study' ? renderSentStudy() : renderSentCheck();
   else if (view === 'measure') S.m.mode === 'study' ? renderMeasureStudy() : renderMCCheck('m');
   else if (view === 'conj') S.c.mode === 'study' ? renderConjStudy() : renderMCCheck('c');
+  else if (view === 'conf') S.z.mode === 'study' ? renderConfStudy() : renderMCCheck('z');
   else S.x.mode === 'study' ? renderSituStudy() : renderMCCheck('x');
 }
 function openCard(id) {
