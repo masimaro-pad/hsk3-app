@@ -2,7 +2,7 @@
    - 앱 화면(index.html): 인터넷이 되면 새 버전을 받고, 안 되면 저장된 버전을 보여 줘요.
    - 아이콘·글꼴: 한 번 받으면 저장해 두고 써요.
    내용을 바꿀 때마다 VERSION을 올려 주세요. */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = 'hsk3-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
