@@ -90,11 +90,20 @@ section.grp>h2 small{color:var(--muted);font-weight:400;font-size:13px}
 .phase{color:var(--accent);font-size:14px;font-weight:600}
 .startf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
 .startf input{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--ink)}
-.weekbar{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.weekbar{display:grid;gap:3px}
+.setup .field{display:flex;flex-direction:column;gap:6px}
+.setup .field>span{font-size:13px;color:var(--muted);font-weight:500}
+.setup .seg{flex-wrap:wrap;border-radius:14px;align-self:flex-start;max-width:100%}
+.setup input[type=date]{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink);align-self:flex-start}
+.pv{background:var(--sunk);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.pv b{font-variant-numeric:tabular-nums}
+.pv .warn{color:var(--bad)}
+.pv .okk{color:var(--accent)}
+.dday{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .weekbar i{height:6px;border-radius:3px;background:var(--line)}
 .weekbar i.past{background:var(--accent-soft)}
 .weekbar i.now{background:var(--accent)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
 .stat{display:flex;flex-direction:column;gap:6px}
 .stat .lab{font-size:13px;color:var(--muted)}
 .stat .big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
@@ -113,7 +122,7 @@ section.grp>h2 small{color:var(--muted);font-weight:400;font-size:13px}
 .pill{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill.k{background:var(--accent-soft);color:var(--accent)}
 .pill.u{background:var(--bad-soft);color:var(--bad)}
-.review{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.review{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
 .rv{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px}
 .rv b{font-size:22px;font-variant-numeric:tabular-nums;color:var(--bad)}
 .rv span{font-size:13px;color:var(--muted)}
@@ -1255,15 +1264,35 @@ const SENTS = SENT_RAW.trim().split('\n').map((line, i) => {
 });
 const SGROUPS = GROUPS.map((_, i) => i).filter(i => SENTS.some(s => s.g === i));
 
-/* 14주 플랜: 1~8주 새 단어, 1~10주 문법 3개씩, 11~14주 실전 복습 */
-const WEEKS = 14;
-const PLAN = Array.from({ length: WEEKS }, () => ({ vt: [], gc: [] }));
-(function () {
-  const per = ALL.length / 8; let cum = 0;
-  TOPICS.forEach((t, i) => { const wk = Math.min(7, Math.floor((cum + t.words.length / 2) / per)); PLAN[wk].vt.push(i); cum += t.words.length; });
-  CARDS.forEach((c, i) => PLAN[Math.floor(i / 3)].gc.push(c.id));
-})();
-const phaseOf = w => w < 8 ? '1~8주 · 새 단어 + 문법' : w < 10 ? '9~10주 · 문법 마무리 + 단어 복습' : '11~14주 · 실전 복습';
+/* 개인 학습 계획: 시작일·목표(시험일 또는 기간)·주당 공부일로 주별 할 일을 만들어요.
+   앞쪽 80%는 학습 기간(단어·문법·문장 배열 + 양사·접속사·표현), 뒤쪽 20%는 실전 복습이에요. */
+let PLAN = [], WEEKS = 14, LEARN = 11;
+const LEVELS = { '0': { cond: '처음 시작한다면', rec: 20 }, '1': { cond: '지금 1급 정도라면', rec: 16 }, '2': { cond: '지금 2급 정도라면', rec: 14 } };
+function weeksFor(p, start) {
+  if (p.mode === 'exam' && p.exam) {
+    const d = (new Date(p.exam + 'T00:00') - new Date(start + 'T00:00')) / 86400000;
+    return Math.max(2, Math.min(52, Math.ceil(d / 7)));
+  }
+  return p.weeks;
+}
+function distribute(units, from, to, put) {
+  const span = Math.max(1, to - from), tot = units.reduce((a, u) => a + u.w, 0) || 1; let cum = 0;
+  units.forEach(u => { put(from + Math.min(span - 1, Math.floor((cum + u.w / 2) / tot * span)), u.v); cum += u.w; });
+}
+function makePlan(W) {
+  const R = W <= 3 ? 1 : Math.max(1, Math.round(W * 0.2)), L = W - R;
+  const P = Array.from({ length: W }, () => ({ vt: [], gc: [], mg: [], cg: [], xg: [] }));
+  distribute(TOPICS.map((t, i) => ({ w: t.words.length, v: i })), 0, L, (w, v) => P[w].vt.push(v));
+  distribute(CARDS.map(c => ({ w: 1, v: c.id })), 0, L, (w, v) => P[w].gc.push(v));
+  distribute(MGROUPS.map((_, i) => ({ w: MEASURES.filter(m => m.g === i).length, v: i })), Math.floor(L * 0.3), L, (w, v) => P[w].mg.push(v));
+  distribute(SITUS.map((x, i) => ({ w: x.items.length, v: i })), Math.floor(L * 0.4), L, (w, v) => P[w].xg.push(v));
+  distribute(CGROUPS.map((_, i) => ({ w: CONJS.filter(c => c.g === i).length, v: i })), Math.floor(L * 0.5), L, (w, v) => P[w].cg.push(v));
+  return { P, W, L, R };
+}
+function buildPlan() { const r = makePlan(weeksFor(S.plan, S.start)); PLAN = r.P; WEEKS = r.W; LEARN = r.L; return r; }
+const phaseOf = w => w < LEARN ? `학습 기간 · ${LEARN}주 중 ${w + 1}주째` : `실전 복습 기간 · 마지막 ${WEEKS - LEARN}주`;
+function addDays(d, n) { const x = new Date(d + 'T00:00'); x.setDate(x.getDate() + n); return x; }
+const md = x => `${x.getMonth() + 1}/${x.getDate()}`;
 
 /* ---------- storage ---------- */
 const KEY = 'hsk3-app-v1';
@@ -1274,6 +1303,7 @@ function load() {
   s = s || {};
   return {
     start: s.start || todayStr(),
+    plan: Object.assign({ set: false, level: '2', mode: 'weeks', weeks: 14, exam: '', days: 5 }, s.plan),
     marks: s.marks || {},
     res: s.res || {},
     sres: s.sres || {},
@@ -1293,6 +1323,7 @@ if (S.s.grp !== 'all' && !SGROUPS.includes(S.s.grp)) S.s.grp = 'all';
 ['m', 'c', 'x'].forEach(k => { if (S[k].grp !== 'all' && typeof S[k].grp !== 'number') S[k].grp = 'all'; });
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 save();
+let pdraftInit = !S.plan.set;
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -1367,48 +1398,81 @@ function gPill(c) {
   const cls = ok === ids.length ? 'k' : (ids.some(id => S.res[id] === 'u') ? 'u' : '');
   return `<span class="pill ${cls}">${ok}/${ids.length}</span>`;
 }
+let pdraft = pdraftInit ? Object.assign({}, S.plan, { start: S.start }) : null;
+function setupPanel() {
+  const d = pdraft;
+  const W = weeksFor(d, d.start);
+  const bad = d.mode === 'exam' && (!d.exam || d.exam <= d.start);
+  const r = makePlan(W);
+  const perDay = Math.ceil(ALL.length / (r.L * d.days));
+  const gPerWeek = Math.ceil(CARDS.length / r.L);
+  const rec = LEVELS[d.level].rec;
+  const opt = (k, v, label) => `<button data-pset="${k}" data-val="${v}" aria-pressed="${String(d[k]) === String(v)}">${label}</button>`;
+  return `<div class="panel setup">
+    <h2>나만의 학습 계획<small>바꿔도 공부 기록은 그대로예요</small></h2>
+    <div class="field"><span>지금 실력</span><div class="seg sm">${opt('level', '0', '처음 시작')}${opt('level', '1', '1급 정도')}${opt('level', '2', '2급 정도')}</div></div>
+    <label class="field" for="pstart"><span>시작일</span><input type="date" id="pstart" value="${d.start}"></label>
+    <div class="field"><span>목표 정하기</span><div class="seg sm">${opt('mode', 'exam', '시험 날짜로')}${opt('mode', 'weeks', '기간으로')}</div></div>
+    ${d.mode === 'exam'
+      ? `<label class="field" for="pexam"><span>시험 날짜</span><input type="date" id="pexam" value="${d.exam}" min="${d.start}"></label>`
+      : `<div class="field"><span>공부 기간</span><div class="seg sm">${[8, 10, 12, 14, 16, 20, 24].map(n => opt('weeks', n, n + '주')).join('')}</div></div>`}
+    <div class="field"><span>일주일에 공부하는 날</span><div class="seg sm">${[3, 4, 5, 6, 7].map(n => opt('days', n, n + '일')).join('')}</div></div>
+    <div class="pv">${bad ? '<span class="warn">시험 날짜를 시작일 이후로 골라 주세요.</span>' : `
+      <div>총 <b>${W}주</b> · 학습 <b>${r.L}주</b> + 실전 복습 <b>${r.R}주</b> (${md(addDays(d.start, 0))} ~ ${md(addDays(d.start, W * 7 - 1))})</div>
+      <div>공부하는 날 하루에 새 단어 약 <b>${perDay}개</b> · 일주일에 문법 약 <b>${gPerWeek}개</b></div>
+      ${W < rec ? `<div class="warn">${LEVELS[d.level].cond} ${rec}주 이상을 추천해요. 일정이 빠듯하니 매일 조금씩 꾸준히 해 주세요.</div>` : `<div class="okk">지금 실력에 알맞은 일정이에요.</div>`}`}
+    </div>
+    <div class="acts">${S.plan.set ? '<button class="btn ghost" data-act="pcancel">취소</button>' : ''}<button class="btn primary" data-act="psave" ${bad ? 'disabled' : ''}>${S.plan.set ? '이 계획으로 바꾸기' : '이 계획으로 시작'}</button></div>
+  </div>`;
+}
 function renderHome() {
+  buildPlan();
   const wi = weekIndex();
   const known = knownCount(ALL), right = rightCount(CARDS);
   const uw = unknownWords().length, wq = wrongCount(), sr = sRight(), sw = sWrong();
   let weekTitle, todo;
+  const row = (attrs, name, right) => `<button class="row" ${attrs}><span class="nm">${name}</span><span class="rt">${right}<span class="go">›</span></span></button>`;
   if (wi < 0) {
-    weekTitle = `<div class="weekno">시작 전</div><div class="phase">시작일이 아직 안 됐어요</div>`;
-    todo = '<p class="hint">시작일을 오늘로 바꾸면 1주차 할 일이 보여요.</p>';
+    weekTitle = `<div class="weekno">시작 전</div><div class="phase">${md(addDays(S.start, 0))}에 시작해요</div>`;
+    todo = '<p class="hint">시작일이 되면 1주차 할 일이 보여요. 그 전에 둘러봐도 좋아요.</p>';
   } else if (wi >= WEEKS) {
-    weekTitle = `<div class="weekno">플랜 완료</div><div class="phase">14주를 모두 지났어요. 시험 접수해 볼까요?</div>`;
+    weekTitle = `<div class="weekno">계획 완료</div><div class="phase">${WEEKS}주를 모두 지났어요. 수고했어요!</div>`;
     todo = reviewTodo();
   } else {
     const P = PLAN[wi];
     weekTitle = `<div class="weekno">${wi + 1}주차<small>/ ${WEEKS}주</small></div><div class="phase">${phaseOf(wi)}</div>`;
     let t = '';
-    if (P.vt.length) t += '<div class="sub">단어</div>' + P.vt.map(i => `<button class="row" data-go-topic="${i}"><span class="nm"><span>${TOPICS[i].name}</span></span><span class="rt">${knownCount(TOPICS[i].words)}/${TOPICS[i].words.length} 외움<span class="go">›</span></span></button>`).join('');
-    else if (wi < 10) t += `<div class="sub">단어</div><button class="row" data-review="v"><span class="nm"><span>몰라요 단어 복습</span></span><span class="rt">${uw}개<span class="go">›</span></span></button>`;
-    if (P.gc.length) t += '<div class="sub">문법</div>' + P.gc.map(id => `<button class="row" data-go-card="${id}"><span class="nm"><span class="zhs">${esc(byId[id].t)}</span><span>${esc(byId[id].s)}</span></span><span class="rt">${gPill(byId[id])}<span class="go">›</span></span></button>`).join('');
-    const ws = SENTS.filter(s => P.gc.includes(s.gid));
-    if (ws.length) t += `<div class="sub">문장 배열</div><button class="row" data-sweek="${wi}"><span class="nm"><span>이번 주 문법으로 배열 연습</span></span><span class="rt">${ws.filter(s => S.sres[s.id] === 'k').length}/${ws.length} 맞힘<span class="go">›</span></span></button>`;
-    const extraRow = (v, name, n) => `<button class="row" data-view="${v}"><span class="nm"><span>${name}</span></span><span class="rt">${n}<span class="go">›</span></span></button>`;
-    if (wi === 8) t += '<div class="sub">양사</div>' + extraRow('measure', '양사 카드 공부하고 확인하기', `${mcRight('m')}/${MCALL.m.length} 맞힘`);
-    if (wi === 9) t += '<div class="sub">접속사</div>' + extraRow('conj', '접속사 카드 공부하고 확인하기', `${mcRight('c')}/${MCALL.c.length} 맞힘`);
-    if (wi === 10 || wi === 11) t += '<div class="sub">상황별 표현</div>' + extraRow('situ', '상황별 표현 듣고 따라 하기', `${mcRight('x')}/${MCALL.x.length} 맞힘`);
-    if (!P.vt.length && !P.gc.length && wi >= 10) t += reviewTodo();
+    if (P.vt.length) t += '<div class="sub">단어</div>' + P.vt.map(i => row(`data-go-topic="${i}"`, `<span>${TOPICS[i].name}</span>`, `${knownCount(TOPICS[i].words)}/${TOPICS[i].words.length} 외움`)).join('');
+    else if (wi < LEARN) t += '<div class="sub">단어</div>' + row('data-review="v"', '<span>몰라요 단어 복습</span>', `${uw}개`);
+    if (P.gc.length) t += '<div class="sub">문법</div>' + P.gc.map(id => row(`data-go-card="${id}"`, `<span class="zhs">${esc(byId[id].t)}</span><span>${esc(byId[id].s)}</span>`, gPill(byId[id]))).join('');
+    const ws = SENTS.filter(x => P.gc.includes(x.gid));
+    if (ws.length) t += '<div class="sub">문장 배열</div>' + row(`data-sweek="${wi}"`, '<span>이번 주 문법으로 배열 연습</span>', `${ws.filter(x => S.sres[x.id] === 'k').length}/${ws.length} 맞힘`);
+    const grpRow = (sec, g, name) => { const qs = MCALL[sec].filter(q => q.g === g); return row(`data-mgo="${sec}:${g}"`, `<span>${name}</span>`, `${qs.filter(q => S.mc[sec][q.qid] === 'k').length}/${qs.length} 맞힘`); };
+    if (P.mg.length) t += '<div class="sub">양사</div>' + P.mg.map(g => grpRow('m', g, MGROUPS[g])).join('');
+    if (P.cg.length) t += '<div class="sub">접속사</div>' + P.cg.map(g => grpRow('c', g, CGROUPS[g])).join('');
+    if (P.xg.length) t += '<div class="sub">상황별 표현</div>' + P.xg.map(g => grpRow('x', g, SITUS[g].name)).join('');
+    if (wi >= LEARN) t += reviewTodo();
     todo = t;
   }
   const weekbar = Array.from({ length: WEEKS }, (_, i) => `<i class="${i < wi ? 'past' : i === wi ? 'now' : ''}"></i>`).join('');
-  const planRows = PLAN.map((P, i) => `<tr class="${i === wi ? 'now' : ''}"><th>${i + 1}주</th><td>${P.vt.length ? P.vt.map(t => TOPICS[t].name).join(', ') : (i < 10 ? '몰라요 단어 복습' : '단어 전체 확인')}</td><td class="zhs">${P.gc.length ? P.gc.map(id => esc(byId[id].t)).join(' · ') : '문법 전체 60문제'}</td></tr>`).join('');
-  main.innerHTML = `<div class="home">
+  const others = P => [P.mg.map(g => '양사 ' + MGROUPS[g]), P.cg.map(g => '접속사 ' + CGROUPS[g]), P.xg.map(g => '표현 ' + SITUS[g].name)].flat().join(', ');
+  const planRows = PLAN.map((P, i) => `<tr class="${i === wi ? 'now' : ''}"><th>${i + 1}주<br><small>${md(addDays(S.start, i * 7))}</small></th><td>${i >= LEARN ? '실전 복습' : (P.vt.length ? P.vt.map(t => TOPICS[t].name).join(', ') : '몰라요 단어 복습')}</td><td class="zhs">${i >= LEARN ? '전체 문제' : P.gc.map(id => esc(byId[id].t)).join(' · ')}</td><td>${i >= LEARN ? '틀린 것 다시' : others(P)}</td></tr>`).join('');
+  const examLine = S.plan.mode === 'exam' && S.plan.exam ? (() => { const dd = Math.ceil((new Date(S.plan.exam + 'T00:00') - new Date(todayStr() + 'T00:00')) / 86400000); return `<span>시험 ${md(addDays(S.plan.exam, 0))} · <b>${dd > 0 ? 'D-' + dd : dd === 0 ? 'D-DAY' : '시험 끝'}</b></span>`; })() : '';
+  const weekPanels = (!S.plan.set || pdraft) ? setupPanel() : `
     <div class="panel">
-      <div class="weekhead"><div>${weekTitle}</div>
-        <label class="startf" for="start">시작일<input type="date" id="start" value="${S.start}"></label></div>
-      <div class="weekbar" aria-hidden="true">${weekbar}</div>
+      <div class="weekhead"><div>${weekTitle}</div><button class="lnk" data-act="pedit">계획 바꾸기</button></div>
+      <div class="weekbar" aria-hidden="true" style="grid-template-columns:repeat(${WEEKS},1fr)">${weekbar}</div>
+      <div class="dday"><span>시작 ${md(addDays(S.start, 0))}</span>${examLine}<span>주 ${S.plan.days}일 공부</span></div>
     </div>
     <div class="panel">
       <h2>이번 주 할 일<small>누르면 바로 이동해요</small></h2>
       <div class="todo">${todo}</div>
-      <details class="plan"><summary>14주 전체 일정 보기</summary>
-        <div class="plantbl"><table><thead><tr><th>주</th><th>단어</th><th>문법</th></tr></thead><tbody>${planRows}</tbody></table></div>
+      <details class="plan"><summary>${WEEKS}주 전체 일정 보기</summary>
+        <div class="plantbl"><table><thead><tr><th>주</th><th>단어</th><th>문법</th><th>그 밖에</th></tr></thead><tbody>${planRows}</tbody></table></div>
       </details>
-    </div>
+    </div>`;
+  main.innerHTML = `<div class="home">
+    ${weekPanels}
     <div class="panel">
       <h2>전체 진도</h2>
       <div class="stats">
@@ -2136,12 +2200,21 @@ document.querySelector('header.top').addEventListener('click', e => {
   if (gb) { S.g.grp = gb.dataset.grp === 'all' ? 'all' : +gb.dataset.grp; gdeck = null; save(); render(); window.scrollTo(0, 0); }
 });
 main.addEventListener('change', e => {
-  if (e.target.id === 'start' && e.target.value) { S.start = e.target.value; save(); renderHome(); }
+  if (pdraft && e.target.id === 'pstart' && e.target.value) { pdraft.start = e.target.value; renderHome(); }
+  if (pdraft && e.target.id === 'pexam') { pdraft.exam = e.target.value; renderHome(); }
 });
 main.addEventListener('click', e => {
   const t = e.target, at = s => t.closest(s);
   let el;
   if ((el = at('[data-view]'))) { go(el.dataset.view); return; }
+  if ((el = at('[data-pset]'))) { const k = el.dataset.pset, v = el.dataset.val; pdraft[k] = (k === 'weeks' || k === 'days') ? +v : v; renderHome(); return; }
+  if ((el = at('[data-act="pedit"]'))) { pdraft = Object.assign({}, S.plan, { start: S.start }); renderHome(); window.scrollTo(0, 0); return; }
+  if ((el = at('[data-act="pcancel"]'))) { pdraft = null; renderHome(); return; }
+  if ((el = at('[data-act="psave"]'))) {
+    S.start = pdraft.start; S.plan = { set: true, level: pdraft.level, mode: pdraft.mode, weeks: pdraft.weeks, exam: pdraft.exam, days: pdraft.days };
+    pdraft = null; save(); renderHome(); window.scrollTo(0, 0); return;
+  }
+  if ((el = at('[data-mgo]'))) { const [sc, g] = el.dataset.mgo.split(':'); S[sc].grp = +g; S[sc].mode = 'study'; mdeck[sc] = null; save(); go(SEC_VIEW[sc]); return; }
   if ((el = at('[data-goref]'))) { const [sc, id] = el.dataset.goref.split(':'); goRef(sc, id); return; }
   if ((el = at('[data-mopen]'))) { const [sc, scope] = el.dataset.mopen.split(':'); openMC(sc, scope); return; }
   if ((el = at('[data-go-topic]'))) { S.v.topic = +el.dataset.goTopic; S.v.mode = 'study'; vdeck = null; save(); go('vocab'); return; }
@@ -2159,7 +2232,7 @@ main.addEventListener('click', e => {
     return;
   }
   if ((el = at('[data-sweek]'))) {
-    const P = PLAN[+el.dataset.sweek];
+    buildPlan(); const P = PLAN[+el.dataset.sweek];
     S.s.grp = 'all'; S.s.mode = 'check'; save();
     buildSDeck(SENTS.filter(s => P.gc.includes(s.gid)));
     go('sentence'); return;
